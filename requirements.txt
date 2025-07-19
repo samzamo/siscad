@@ -4,9 +4,6 @@ gunicorn
 flask_sqlalchemy
 pandas
 openpyxl 
-
 requests
-
 python-dotenv
-
 werkzeugpandas
