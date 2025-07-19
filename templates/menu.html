@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Menu Principal</title>
+  <style>
+    body {
+      background-color: #c6f6ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+    h2 {
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    button {
+      width: 220px;
+      padding: 12px;
+      margin: 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0090ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #0070cc;
+    }
+    form {
+      display: block;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-wrapper">
+  <div class="form-container">
+  <h2>Menu Principal</h2>
+
+  <form action="/cadastro_alvo">
+    <button type="submit">cadastrar alvo</button>
+  </form>
+
+  <form action="/pesquisar_alvo">
+    <button type="submit">pesquisar alvo</button>
+  </form>
+
+  {% if is_admin %}
+    <form action="/gerenciar_usuarios">
+      <button type="submit">gerenciar usuários</button>
+    </form>
+
+    <form action="/visualizar_todos">
+      <button type="submit">ver todos os cadastros</button>
+    </form>
+  {% endif %}
+
+  <form action="/logout">
+  <button type="submit">sair</button>
+</form>
+  </div>
+</div>
+
+</body>
+</html>

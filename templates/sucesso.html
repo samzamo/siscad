@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Sucesso!</title>
+  <style>
+    body {
+      background-color: #d0ffd6;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 60px;
+    }
+    h2 {
+      color: green;
+      font-size: 22px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #0090ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0070cc;
+    }
+  </style>
+</head>
+<body>
+  <h2>{{ mensagem }}</h2>
+  <form action="/menu">
+    <button type="submit">voltar ao menu</button>
+  </form>
+</body>
+</html>
+

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Dados Cadastrados</title>
+  <style>
+    body {
+      background-color: #f7fff1;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 30px;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 90%;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #aaa;
+    }
+    img {
+      max-width: 80px;
+      max-height: 80px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Alvos Cadastrados</h2>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Nome</th>
+      <th>Vulgo</th>
+      <th>Genitora</th>
+      <th>Foto</th>
+    </tr>
+    {% for pessoa in dados %}
+    <tr>
+      <td>{{ pessoa[0] }}</td>
+      <td>{{ pessoa[1] }}</td>
+      <td>{{ pessoa[2] }}</td>
+      <td>{{ pessoa[4] }}</td>
+      <td>
+        {% if pessoa[3] %}
+          <img src="{{ url_for('static', filename='IMAGEM/' + pessoa[3]) }}">
+        {% else %}
+          (sem foto)
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  <br>
+  <form action="/menu">
+    <button>voltar ao menu</button>
+  </form>
+</body>
+</html>

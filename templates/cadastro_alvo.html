@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Alvo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background-color: #b6ffe7;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .form-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+    }
+    .form-container {
+      background-color: #fcfcfc;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h2, h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #aaa;
+      font-size: 16px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: none;
+      background-color: #0e93ec;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #007dd2;
+    }
+    @media screen and (max-width: 600px) {
+      .form-wrapper { padding: 20px; }
+      .form-container { padding: 20px; }
+      input, select, textarea, button { font-size: 14px; }
+      h2, h3 { font-size: 18px; }
+    }
+  </style>
+
+  <script>
+    const bairrosPorMunicipio = {
+      Fortaleza: [
+        "Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
+        "Amadeu Furtado", "Ancuri", "Antônio Bezerra", "Antônio Diogo", "Autran Nunes",
+        "Barra do Ceará", "Barroso", "Bela Vista", "Benfica", "Boa Vista", "Bom Futuro",
+        "Bom Jardim", "Bonsucesso", "Cachoeirinha", "Cais do Porto", "Cajazeiras", "Cambeba",
+        "Canindezinho", "Carlito Pamplona", "Centro", "Cidade 2000", "Cidade dos Funcionários",
+        "Coaçu", "Cocó", "Conjunto Ceará", "Conjunto Esperança", "Conjunto Palmeiras",
+        "Couto Fernandes", "Cristo Redentor", "Curió", "Damas", "De Lourdes", "Demócrito Rocha",
+        "Dendê", "Dias Macedo", "Dionísio Torres", "Dom Lustosa", "Edson Queiroz",
+        "Engenheiro Luciano Cavalcante", "Farias Brito", "Fátima", "Floresta", "Granja Lisboa",
+        "Granja Portugal", "Guajiru", "Henrique Jorge", "Itaoca", "Itaperi", "Jacarecanga",
+        "Jangurussu", "Jardim América", "Jardim Cearense", "Jardim das Oliveiras", "Jardim Guanabara",
+        "Jardim Iracema", "João XXIII", "Joaquim Távora", "Jóquei Clube", "José Bonifácio",
+        "José de Alencar", "Lagoa Redonda", "Manoel Dias Branco", "Manuel Sátiro", "Maraponga",
+        "Meireles", "Messejana", "Mondubim", "Monte Castelo", "Montese", "Moura Brasil",
+        "Mucuripe", "Novo Mondubim", "Olavo Oliveira", "Padre Andrade", "Pan Americano",
+        "Papicu", "Parangaba", "Parque Araxá", "Parque Dois Irmãos", "Parque Genibaú",
+        "Parque Iracema", "Parque Manibura", "Parque Presidente Vargas", "Parque Santa Maria",
+        "Parque Santa Rosa", "Parque São José", "Parquelândia", "Parreão", "Passaré",
+        "Patriolino Ribeiro", "Paupina", "Pedras", "Pici", "Pirambu", "Planalto Ayrton Senna",
+        "Praia de Iracema", "Prefeito José Walter", "Presidente Kennedy", "Quintino Cunha",
+        "Rodolfo Teófilo", "Sabiaguaba", "Salinas", "São Bento", "São Gerardo",
+        "São João do Tauape", "Sapiranga", "Serrinha", "Siqueira", "Varjota", "Vicente Pinzon",
+        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"
+      ],
+      Caucaia: ["Parque Soledade", "Jurema", "Centro", "Tabapuá"],
+      Maracanaú: ["Pajuçara", "Jardim Bandeirantes", "Centro", "Alto Alegre"]
+    };
+
+    function atualizarBairros() {
+      const municipio = document.getElementById("municipio").value;
+      const bairroSelect = document.getElementById("bairro");
+      bairroSelect.innerHTML = "";
+      if (bairrosPorMunicipio[municipio]) {
+        bairrosPorMunicipio[municipio].forEach(b => {
+          const opt = document.createElement("option");
+          opt.value = b;
+          opt.textContent = b;
+          bairroSelect.appendChild(opt);
+        });
+      }
+    }
+
+    function verificarNome() {
+      const inputNome = document.querySelector('input[name="nome"]');
+      const aviso = document.getElementById("aviso-nome");
+      const botaoSalvar = inputNome.closest("form").querySelector('button[type="submit"]');
+
+      const nome = inputNome.value.trim();
+      if (!nome) {
+        aviso.textContent = "";
+        botaoSalvar.disabled = false;
+        return;
+      }
+
+      fetch(`/verificar_nome?nome=${encodeURIComponent(nome)}`)
+        .then(res => res.text())
+        .then(data => {
+          if (data === "existente") {
+            aviso.textContent = "⚠️ Este nome já está cadastrado.";
+            aviso.style.color = "#900";
+            botaoSalvar.disabled = true;
+          } else {
+            aviso.textContent = "";
+            botaoSalvar.disabled = false;
+          }
+        });
+    }
+  </script>
+</head>
+<body>
+  <div class="form-wrapper">
+    <div class="form-container">
+      <h2>Cadastro de Alvo</h2>
+
+      {% if mensagem %}
+        <div style="background-color:#ffe0e0; color:#900; padding:10px; border-radius:8px; margin-bottom:15px;">
+          {{ mensagem }}
+        </div>
+      {% endif %}
+
+      <form method="POST" enctype="multipart/form-data">
+        <input type="text" name="nome" placeholder="Nome" required onblur="verificarNome()">
+        <div id="aviso-nome" style="margin-bottom:10px; font-weight:bold;"></div>
+
+        <input type="text" name="vulgo" placeholder="Vulgo">
+        <input type="text" name="genitora" placeholder="Genitora">
+
+        <select name="municipio" id="municipio" onchange="atualizarBairros()" required>
+          <option value="">Selecione o município</option>
+          <option value="Fortaleza">Fortaleza</option>
+          <option value="Caucaia">Caucaia</option>
+          <option value="Maracanaú">Maracanaú</option>
+        </select>
+
+        <select name="bairro" id="bairro" required>
+          <option value="">Selecione o bairro</option>
+        </select>
+
+        <textarea name="anotacoes" placeholder="Anotações sobre o alvo" rows="4"></textarea>
+        <input type="text" name="octopus" placeholder="Octopus (classificação/código interno)">
+        <input type="file" name="foto" accept="image/*">
+
+        <button type="submit">Salvar</button>
+      </form>
+
+      <form action="/menu">
+        <button type="submit" style="background-color: #ccc; color: #000;">Voltar ao Menu</button>
+      </form>
+    </div>
+  </div>
+
+  <h3>Total de alvos cadastrados: {{ total }}</h3>
+</body>
+</html>

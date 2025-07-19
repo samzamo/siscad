@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pesquisar Alvo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      background-color: #d2f5d0;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .form-wrapper {
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .form-container {
+      width: 100%;
+      max-width: 700px;
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px #aaa;
+    }
+
+    h2, h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border: 1px solid #aaa;
+      font-size: 16px;
+    }
+
+    /* Botão azul padrão */
+    button {
+      background-color: #0d8df7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    button:hover {
+      background-color: #0092cc;
+    }
+
+    /* Botões de resultado da pesquisa em laranja */
+    .resultado-button {
+      background-color: #f08c00;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      margin-bottom: 10px;
+    }
+
+    .resultado-button:hover {
+      background-color: #cc7200;
+    }
+
+    .resultado, .alvo-info {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #b4ebb4;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #888;
+    }
+
+    .alvo-info img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 2px solid #064d26;
+      margin: 10px auto;
+      display: block;
+    }
+
+    .anotacoes-box {
+      white-space: pre-wrap;
+      background-color: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-bottom: 20px;
+    }
+
+    @media screen and (max-width: 600px) {
+      .form-container { padding: 20px; }
+      input, textarea, select, button { font-size: 14px; }
+    }
+  </style>
+  <script>
+    function toggleEdicao() {
+      const box = document.getElementById("box-edicao");
+      const btn = document.getElementById("botao-toggle");
+
+      if (box.style.display === "none" || box.style.display === "") {
+        box.style.display = "block";
+        btn.innerText = "Fechar edição";
+      } else {
+        box.style.display = "none";
+        btn.innerText = "Alterar dados";
+      }
+    }
+  </script>
+</head>
+<body>
+
+  <div class="form-wrapper">
+    <div class="form-container">
+
+      <h2>Pesquisar Alvo</h2>
+
+      <!-- 🔍 Botão de pesquisa com espaçamento abaixo -->
+      <form method="POST" style="margin-bottom: 15px;">
+        <input type="text" name="termo" placeholder="nome ou vulgo" value="{{ termo }}" required>
+        <input type="text" name="bairro" placeholder="bairro (opcional)" value="{{ bairro }}">
+        <button type="submit">🔍 pesquisar</button>
+      </form>
+
+      <!-- 🏠 Botão de voltar ao menu -->
+      <form action="/menu">
+        <button type="submit">🏠 voltar ao menu</button>
+      </form>
+
+      {% if resultados %}
+        <div class="resultado">
+          <h3>Resultados:</h3>
+          {% for r in resultados %}
+            <form method="GET">
+              <input type="hidden" name="id" value="{{ r[0] }}">
+              <button type="submit" class="resultado-button">{{ r[1] }} – {{ r[2] }}</button>
+            </form>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if alvo %}
+        <div class="alvo-info">
+          <h3>Alvo Selecionado</h3>
+
+          {% if alvo[3] %}
+            <img src="{{ url_for('static', filename='IMAGEM/' + alvo[3]) }}">
+          {% endif %}
+
+          <p><strong>Nome:</strong> {{ alvo[1] }}</p>
+          <p><strong>Vulgo:</strong> {{ alvo[2] }}</p>
+          <p><strong>Genitora:</strong> {{ alvo[4] }}</p>
+          <p><strong>Município:</strong> {{ alvo[8] }}</p>
+          <p><strong>Bairro:</strong> {{ alvo[5] }}</p>
+          <p><strong>Octopus:</strong> {{ alvo[7] }}</p>
+
+          <p><strong>Anotações:</strong></p>
+          <div class="anotacoes-box">{{ alvo[6] }}</div>
+
+          <!-- 🔘 Botão para abrir/fechar campos de edição -->
+          <button type="button" id="botao-toggle" onclick="toggleEdicao()">Alterar dados</button>
+
+          <!-- ✏️ Edição oculta por padrão -->
+          <div id="box-edicao" style="display:none; margin-top:20px;">
+            <form method="POST" action="/editar_alvo">
+              <input type="hidden" name="id" value="{{ alvo[0] }}">
+              <input type="text" name="nome" value="{{ alvo[1] }}" placeholder="nome">
+              <input type="text" name="vulgo" value="{{ alvo[2] }}" placeholder="vulgo">
+              <input type="text" name="genitora" value="{{ alvo[4] }}" placeholder="genitora">
+              <input type="text" name="municipio" value="{{ alvo[8] }}" placeholder="município">
+              <input type="text" name="bairro" value="{{ alvo[5] }}" placeholder="bairro">
+              <textarea name="anotacoes" rows="6" placeholder="anotações">{{ alvo[6] }}</textarea>
+              <input type="text" name="octopus" value="{{ alvo[7] }}" placeholder="octopus">
+              <button type="submit">salvar alterações</button>
+            </form>
+
+            <form method="POST" enctype="multipart/form-data" action="/atualizar_foto">
+              <input type="hidden" name="id" value="{{ alvo[0] }}">
+              <input type="file" name="nova_foto" accept="image/*" required>
+              <button type="submit">atualizar foto</button>
+            </form>
+          </div>
+
+          {% if is_admin %}
+            <form method="POST" action="/excluir_alvo" onsubmit="return confirm('Tem certeza que deseja excluir este alvo?')">
+              <input type="hidden" name="id" value="{{ alvo[0] }}">
+              <button type="submit" style="background-color:#ff4c4c;">🗑️ excluir cadastro</button>
+            </form>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    </div>
+  </div>
+
+</body>
+</html>

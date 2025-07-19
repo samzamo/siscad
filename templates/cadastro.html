@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Usuário</title>
+  <style>
+    body {
+      background-color: #f7d3ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 40px;
+    }
+    input {
+      width: 300px;
+      padding: 10px;
+      margin: 12px;
+      border: 1px solid #999;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      width: 320px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #c600ff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #9400cc;
+    }
+    .container {
+      background-color: #fff0fe;
+      border-radius: 12px;
+      padding: 30px;
+      display: inline-block;
+      box-shadow: 0 0 10px #aaa;
+    }
+    h2 {
+      margin-bottom: 25px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Cadastro de Acesso</h2>
+    <form method="POST">
+      <input type="text" name="username" placeholder="nome de usuário" required><br>
+      <input type="password" name="password" placeholder="senha" required><br>
+      <input type="password" name="confirmar" placeholder="confirme a senha" required><br>
+      <button type="submit">criar acesso</button>
+    </form>
+    <br>
+    <form action="/">
+      <button type="submit" style="background-color:#ccc; color:black;">voltar ao login</button>
+    </form>
+  </div>
+</body>
+</html>
+
+

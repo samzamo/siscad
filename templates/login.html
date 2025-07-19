@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Login</title>
+  <style>
+    body {
+      background-color: #d0f0ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding-top: 50px;
+    }
+    .container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 0 10px #aaa;
+    }
+    input {
+      width: 250px;
+      padding: 10px;
+      margin: 8px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      width: 270px;
+      padding: 12px;
+      margin: 12px;
+      border: none;
+      border-radius: 8px;
+      background-color: #0090ff;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0070cc;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>SISTEMA DE ACESSO</h2>
+    <form method="POST">
+      <input type="text" name="username" placeholder="usuário" required><br>
+      <input type="password" name="password" placeholder="senha" required><br>
+      <button type="submit">entrar</button>
+    </form>
+    <form action="/cadastro">
+      <button type="submit" style="background-color: #ccc; color: #000;">criar novo acesso</button>
+    </form>
+  </div>
+</body>
+</html>
+
+
