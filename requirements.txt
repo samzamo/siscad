@@ -3,7 +3,7 @@ flask
 gunicorn
 flask_sqlalchemy
 pandas
-openpyxl (para ler planilhas Excel)
+openpyxl 
 
 requests
 
