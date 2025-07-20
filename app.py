@@ -1,83 +1,43 @@
-import unicodedata
 from flask import Flask, render_template, request, redirect, url_for, session
-import sqlite3
-import hashlib
-import os
-import pandas as pd
+from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
-import socket
+import hashlib, os, unicodedata, socket
 
+app = Flask(__name__)
+app.secret_key = 'sua_chave_secreta_segura_123'
+
+# 📦 Conexão com banco PostgreSQL no Render
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://siscad_user:V1q2FuX6g6f2hAwgjznkFTU0XO4RUHKE@dpg-d1u76qur433s73eedafg-a.oregon-postgres.render.com/siscad'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
+db = SQLAlchemy(app)
+
+# ✏️ Função de limpeza
 def limpar_texto(texto):
     texto = texto.upper()
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto
 
-app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_segura_123'
-app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
+# 🧱 Modelos
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password = db.Column(db.String(255), nullable=False)
+    ativo = db.Column(db.Boolean, default=False)
+    tipo = db.Column(db.String(10), default='normal')
 
-def criar_tabelas():
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            ativo INTEGER DEFAULT 0
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS pessoas (
-            id INTEGER PRIMARY KEY,
-            nome TEXT NOT NULL,
-            vulgo TEXT,
-            foto TEXT,
-            genitora TEXT,
-            bairro TEXT,
-            anotacoes TEXT,
-            octopus TEXT,
-            municipio TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
+class Pessoa(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), nullable=False)
+    vulgo = db.Column(db.String(255))
+    foto = db.Column(db.String(255))
+    genitora = db.Column(db.String(255))
+    bairro = db.Column(db.String(255))
+    anotacoes = db.Column(db.Text)
+    octopus = db.Column(db.String(255))
+    municipio = db.Column(db.String(255))
 
-def importar_planilha():
-    caminho = 'pessoas.xlsx'
-    if not os.path.exists(caminho): return
-    df = pd.read_excel(caminho)
-    df.columns = df.columns.str.strip().str.lower()
-    obrigatorias = ['id', 'nome', 'vulgo', 'foto', 'genitora', 'bairro', 'anotacoes', 'octopus', 'municipio']
-    if not all(c in df.columns for c in obrigatorias): return
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    for _, row in df.iterrows():
-        try:
-            id_valor = int(row['id'])
-            nome = str(row['nome']).strip()
-            vulgo = str(row['vulgo']).strip()
-            foto = str(row['foto']).strip()
-            genitora = str(row['genitora']).strip()
-            bairro = str(row['bairro']).strip()
-            anotacoes = str(row['anotacoes']).strip()
-            octopus = str(row['octopus']).strip()
-            municipio = str(row['municipio']).strip()
-            cursor.execute('SELECT * FROM pessoas WHERE id = ?', (id_valor,))
-            if not cursor.fetchone():
-                cursor.execute('''
-                    INSERT INTO pessoas (
-                        id, nome, vulgo, foto, genitora, bairro, anotacoes, octopus, municipio
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (id_valor, nome, vulgo, foto, genitora, bairro, anotacoes, octopus, municipio))
-        except:
-            pass
-    conn.commit()
-    conn.close()
-
-criar_tabelas()
-importar_planilha()
-
+# 🚪 Login
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -85,120 +45,25 @@ def login():
         raw_password = request.form['password']
         password = hashlib.sha256(raw_password.encode()).hexdigest()
 
-        conn = sqlite3.connect('banco.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT id, username, password, ativo, tipo FROM usuarios WHERE username = ? AND password = ?', (username, password))
-        user = cursor.fetchone()
-        conn.close()
-
+        user = Usuario.query.filter_by(username=username, password=password).first()
         if user:
-            if user[3] == 1:  # Verifica se está ativo
+            if user.ativo:
                 session['usuario_logado'] = username
-                session['is_admin'] = (user[4] == 'adm')  # Agora usando o campo tipo
+                session['is_admin'] = (user.tipo == 'adm')
                 return redirect(url_for('menu_principal'))
             else:
                 return '⛔ Aguarde liberação do administrador.'
         else:
             return '⚠️ Login inválido.'
-
     return render_template('login.html')
 
+# 🧭 Menu principal
 @app.route('/menu')
 def menu_principal():
     is_admin = session.get('is_admin', False)
     return render_template('menu.html', is_admin=is_admin)
 
-@app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
-def gerenciar_usuarios():
-    if not session.get('is_admin'):
-        return '⚠️ Acesso negado. Esta página é restrita a administradores.'
-
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-
-    # 🔒 Atualizar senha
-    if request.method == 'POST' and 'nova_senha' in request.form:
-        user_id = request.form['id']
-        nova_senha = request.form['nova_senha']
-        hash = hashlib.sha256(nova_senha.encode()).hexdigest()
-        cursor.execute('UPDATE usuarios SET password = ? WHERE id = ?', (hash, user_id))
-        conn.commit()
-
-    # 🗑️ Excluir usuário
-    if request.method == 'POST' and 'excluir_id' in request.form:
-        excluir_id = request.form['excluir_id']
-        cursor.execute('DELETE FROM usuarios WHERE id = ?', (excluir_id,))
-        conn.commit()
-
-    # 🔁 Alterar tipo (perfil)
-    if request.method == 'POST' and 'novo_tipo' in request.form:
-        user_id = request.form['id']
-        novo_tipo = request.form['novo_tipo']
-        if novo_tipo in ['adm', 'normal']:
-            cursor.execute('UPDATE usuarios SET tipo = ? WHERE id = ?', (novo_tipo, user_id))
-            conn.commit()
-
-    # 🔄 Listagem de usuários
-    cursor.execute('SELECT id, username, ativo, password, tipo FROM usuarios')
-    usuarios = cursor.fetchall()
-
-    # ⏳ Usuários pendentes
-    cursor.execute('SELECT id, username FROM usuarios WHERE ativo = 0')
-    pendentes = cursor.fetchall()
-
-    conn.close()
-    return render_template('gerenciar_usuarios.html', usuarios=usuarios, pendentes=pendentes)
-
-@app.route('/autorizar/<int:id>')
-def autorizar(id):
-    if not session.get('is_admin'):
-        return '⚠️ Acesso negado. Esta página é restrita a administradores.'
-
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('UPDATE usuarios SET ativo = 1 WHERE id = ?', (id,))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('gerenciar_usuarios'))
-
-# Parte 2 continua já já! 😄 Segura que vou trazer o resto completinho pra você.
-@app.route('/pesquisar_alvo', methods=['GET', 'POST'])
-def pesquisar_alvo():
-    termo = ''
-    bairro = ''
-    resultados = []
-    alvo = None
-
-    if request.method == 'POST':
-        termo = limpar_texto(request.form['termo'])
-        bairro = limpar_texto(request.form['bairro'])
-        conn = sqlite3.connect('banco.db')
-        cursor = conn.cursor()
-        if bairro:
-            cursor.execute('''
-                SELECT * FROM pessoas
-                WHERE (nome LIKE ? OR vulgo LIKE ?) AND bairro LIKE ?
-            ''', (f'%{termo}%', f'%{termo}%', f'%{bairro}%'))
-        else:
-            cursor.execute('''
-                SELECT * FROM pessoas
-                WHERE nome LIKE ? OR vulgo LIKE ?
-            ''', (f'%{termo}%', f'%{termo}%'))
-        resultados = cursor.fetchall()
-        conn.close()
-
-    if request.args.get('id'):
-        id_alvo = request.args.get('id')
-        conn = sqlite3.connect('banco.db')
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM pessoas WHERE id = ?', (id_alvo,))
-        alvo = cursor.fetchone()
-        conn.close()
-
-    is_admin = session.get('is_admin', False)
-    return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
-
-
+# 🛂 Cadastro de usuário
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
@@ -210,36 +75,55 @@ def cadastro():
             return '⚠️ As senhas não coincidem.'
 
         password_hash = hashlib.sha256(senha.encode()).hexdigest()
-        conn = sqlite3.connect('banco.db')
-        cursor = conn.cursor()
 
-        try:
-            cursor.execute('''
-                INSERT INTO usuarios (username, password, ativo)
-                VALUES (?, ?, 0)
-            ''', (username, password_hash))
-            conn.commit()
-            return '✅ Cadastro enviado! Aguarde aprovação.'
-        except sqlite3.IntegrityError:
+        if Usuario.query.filter_by(username=username).first():
             return '⚠️ Usuário já existe.'
-        finally:
-            conn.close()
 
+        novo_usuario = Usuario(username=username, password=password_hash)
+        db.session.add(novo_usuario)
+        db.session.commit()
+        return '✅ Cadastro enviado! Aguarde aprovação.'
     return render_template('cadastro.html')
 
+# 👩‍💼 Gerenciar usuários
+@app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
+def gerenciar_usuarios():
+    if not session.get('is_admin'):
+        return '⚠️ Acesso negado.'
 
-from flask import request, render_template
-from werkzeug.utils import secure_filename
-import sqlite3
-import os
+    if request.method == 'POST':
+        user_id = request.form.get('id')
+        if 'nova_senha' in request.form:
+            nova_senha = request.form['nova_senha']
+            hash = hashlib.sha256(nova_senha.encode()).hexdigest()
+            Usuario.query.filter_by(id=user_id).update({'password': hash})
+            db.session.commit()
+        elif 'excluir_id' in request.form:
+            excluir_id = request.form['excluir_id']
+            Usuario.query.filter_by(id=excluir_id).delete()
+            db.session.commit()
+        elif 'novo_tipo' in request.form:
+            novo_tipo = request.form['novo_tipo']
+            if novo_tipo in ['adm', 'normal']:
+                Usuario.query.filter_by(id=user_id).update({'tipo': novo_tipo})
+                db.session.commit()
 
+    usuarios = Usuario.query.all()
+    pendentes = Usuario.query.filter_by(ativo=False).all()
+    return render_template('gerenciar_usuarios.html', usuarios=usuarios, pendentes=pendentes)
+
+# ✅ Autorizar usuários
+@app.route('/autorizar/<int:id>')
+def autorizar(id):
+    if not session.get('is_admin'):
+        return '⚠️ Acesso negado.'
+    Usuario.query.filter_by(id=id).update({'ativo': True})
+    db.session.commit()
+    return redirect(url_for('gerenciar_usuarios'))
+
+# 🎯 Cadastro de alvo
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT COUNT(*) FROM pessoas')
-    total_cadastros = cursor.fetchone()[0]
-
     if request.method == 'POST':
         nome = limpar_texto(request.form['nome'])
         vulgo = limpar_texto(request.form['vulgo'])
@@ -254,51 +138,68 @@ def cadastro_alvo():
             foto_nome = secure_filename(foto.filename)
             foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
 
-        # 🔍 Verifica se já existe nome OU vulgo cadastrado
-        cursor.execute('SELECT id FROM pessoas WHERE nome = ? OR vulgo = ?', (nome, vulgo))
-        existente = cursor.fetchone()
+        existente = Pessoa.query.filter((Pessoa.nome == nome) | (Pessoa.vulgo == vulgo)).first()
         if existente:
-            conn.close()
-            return render_template(
-                'cadastro_alvo.html',
-                mensagem="⚠️ Este nome ou vulgo já está cadastrado.",
-                total=total_cadastros
-            )
+            total = Pessoa.query.count()
+            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome ou vulgo já cadastrados.", total=total)
 
-        # 🚀 Insere novo registro
-        cursor.execute('''
-            INSERT INTO pessoas (
-                id, nome, vulgo, foto, genitora, bairro, anotacoes, octopus, municipio
-            ) VALUES ((SELECT COALESCE(MAX(id),0)+1 FROM pessoas), ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (nome, vulgo, foto_nome, genitora, bairro, anotacoes, octopus, municipio))
+        nova_pessoa = Pessoa(
+            nome=nome, vulgo=vulgo, foto=foto_nome,
+            genitora=genitora, bairro=bairro,
+            anotacoes=anotacoes, octopus=octopus,
+            municipio=municipio
+        )
+        db.session.add(nova_pessoa)
+        db.session.commit()
+        total = Pessoa.query.count()
+        return render_template('sucesso.html', mensagem="✅ Alvo cadastrado com sucesso!")
+    total = Pessoa.query.count()
+    return render_template('cadastro_alvo.html', total=total)
 
-        conn.commit()
-        cursor.execute('SELECT COUNT(*) FROM pessoas')
-        total_cadastros = cursor.fetchone()[0]
-        conn.close()
+# 🔎 Pesquisar alvo
+@app.route('/pesquisar_alvo', methods=['GET', 'POST'])
+def pesquisar_alvo():
+    termo = ''
+    bairro = ''
+    resultados = []
+    alvo = None
 
-        return render_template('sucesso.html', mensagem='✅ Alvo cadastrado com sucesso!')
+    if request.method == 'POST':
+        termo = limpar_texto(request.form['termo'])
+        bairro = limpar_texto(request.form['bairro'])
+        query = Pessoa.query.filter(
+            (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
+        )
+        if bairro:
+            query = query.filter(Pessoa.bairro.ilike(f'%{bairro}%'))
+        resultados = query.all()
 
-    conn.close()
-    return render_template('cadastro_alvo.html', total=total_cadastros)
+    if request.args.get('id'):
+        alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
 
-@app.route('/verificar_nome')
-def verificar_nome():
-    nome = request.args.get('nome', '').strip()
-    if not nome:
-        return 'vazio'
+    is_admin = session.get('is_admin', False)
+    return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
 
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('SELECT id FROM pessoas WHERE LOWER(nome) = LOWER(?)', (nome,))
-    resultado = cursor.fetchone()
-    conn.close()
+# ✏️ Editar alvo
+@app.route('/editar_alvo', methods=['POST'])
+def editar_alvo():
+    id_alvo = request.form['id']
+    alvo = Pessoa.query.get(id_alvo)
+    if not alvo:
+        return '❌ Alvo não encontrado.'
 
-    if resultado:
-        return 'existente'
-    else:
-        return 'novo'
+    alvo.nome = limpar_texto(request.form['nome'])
+    alvo.vulgo = limpar_texto(request.form['vulgo'])
+    alvo.genitora = limpar_texto(request.form['genitora'])
+    alvo.bairro = limpar_texto(request.form['bairro'])
+    alvo.municipio = limpar_texto(request.form['municipio'])
+    alvo.anotacoes = request.form['anotacoes']
+    alvo.octopus = limpar_texto(request.form['octopus'])
 
+    db.session.commit()
+    return redirect(url_for('pesquisar_alvo', id=id_alvo))
+
+# 🖼️ Atualizar foto
 @app.route('/atualizar_foto', methods=['POST'])
 def atualizar_foto():
     id_alvo = request.form['id']
@@ -306,61 +207,34 @@ def atualizar_foto():
     if nova_foto and nova_foto.filename:
         foto_nome = secure_filename(nova_foto.filename)
         nova_foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
-        conn = sqlite3.connect('banco.db')
-        cursor = conn.cursor()
-        cursor.execute('UPDATE pessoas SET foto = ? WHERE id = ?', (foto_nome, id_alvo))
-        conn.commit()
-        conn.close()
+        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_nome})
+        db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
-
-@app.route('/editar_alvo', methods=['POST'])
-def editar_alvo():
-    id_alvo = request.form['id']
-    nome = limpar_texto(request.form['nome'])
-    vulgo = limpar_texto(request.form['vulgo'])
-    genitora = limpar_texto(request.form['genitora'])
-    bairro = limpar_texto(request.form['bairro'])
-    municipio = limpar_texto(request.form['municipio'])
-    anotacoes = request.form['anotacoes']
-    octopus = limpar_texto(request.form['octopus'])
-
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('''
-        UPDATE pessoas
-        SET nome = ?, vulgo = ?, genitora = ?, bairro = ?, municipio = ?, anotacoes = ?, octopus = ?
-        WHERE id = ?
-    ''', (nome, vulgo, genitora, bairro, municipio, anotacoes, octopus, id_alvo))
-    conn.commit()
-    conn.close()
-    return redirect(url_for('pesquisar_alvo', id=id_alvo))
-
-
+# 🗑️ Excluir alvo
 @app.route('/excluir_alvo', methods=['POST'])
 def excluir_alvo():
     id_alvo = request.form['id']
-    conn = sqlite3.connect('banco.db')
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM pessoas WHERE id = ?', (id_alvo,))
-    conn.commit()
-    conn.close()
+    Pessoa.query.filter_by(id=id_alvo).delete()
+    db.session.commit()
     return redirect(url_for('pesquisar_alvo'))
 
+# 🚪 Logout
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-
+# 🌐 IP local (apenas para debug em rede interna)
 def mostrar_ip_local():
     try:
         hostname = socket.gethostname()
         ip_local = socket.gethostbyname(hostname)
         print(f"\n🌐 Site disponível em: http://{ip_local}:5000 (rede local)\n")
     except Exception as e:
-        print("⚠️ Não foi possível detectar o IP local:", e)
+        print("⚠️ IP local não detectado:", e)
 
+# 🔃 Execução principal (local apenas)
 if __name__ == '__main__':
     print("🚀 Iniciando o sistema...")
     mostrar_ip_local()

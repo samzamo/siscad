@@ -1,0 +1,16 @@
+usuário e senha banco de dados siscad -
+user : siscad_user
+senha : postgresql://siscad_user:V1q2FuX6g6f2hAwgjznkFTU0XO4RUHKE@dpg-d1u76qur433s73eedafg-a/siscad
+
+
+Database
+siscad
+
+Username
+siscad_user
+
+Password
+V1q2FuX6g6f2hAwgjznkFTU0XO4RUHKE
+
+
+Internal Database URL
