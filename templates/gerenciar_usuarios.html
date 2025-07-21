@@ -68,11 +68,11 @@
         </tr>
         {% for usuario in usuarios %}
         <tr>
-            <td>{{ usuario[0] }}</td>
-            <td>{{ usuario[1] }}</td>
-            <td>{{ usuario[3] }}</td>
+            <td>{{ usuario.id }}</td>
+            <td>{{ usuario.username }}</td>
+            <td>{{ usuario.password }}</td>
             <td>
-                {% if usuario[2] == 1 %}
+                {% if usuario.ativo %}
                     ✅ Ativo
                 {% else %}
                     ⏳ Pendente
@@ -80,25 +80,23 @@
             </td>
             <td>
                 <form method="POST" action="/gerenciar_usuarios" class="inline">
-                    <input type="hidden" name="id" value="{{ usuario[0] }}">
+                    <input type="hidden" name="id" value="{{ usuario.id }}">
                     <select name="novo_tipo">
-                        <option value="normal" {% if usuario[4] == 'normal' %}selected{% endif %}>Normal</option>
-                        <option value="adm" {% if usuario[4] == 'adm' %}selected{% endif %}>Admin</option>
+                        <option value="normal" {% if usuario.tipo == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="admin" {% if usuario.tipo == 'admin' %}selected{% endif %}>Admin</option>
                     </select>
                     <input type="submit" value="🔄 Alterar">
                 </form>
             </td>
             <td>
-                <!-- Formulário para alterar senha -->
                 <form method="POST" action="/gerenciar_usuarios" class="inline">
-                    <input type="hidden" name="id" value="{{ usuario[0] }}">
+                    <input type="hidden" name="id" value="{{ usuario.id }}">
                     <input type="text" name="nova_senha" placeholder="Nova senha" required>
                     <input type="submit" value="🔒 Alterar Senha">
                 </form>
 
-                <!-- Formulário para excluir usuário -->
                 <form method="POST" action="/gerenciar_usuarios" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-                    <input type="hidden" name="excluir_id" value="{{ usuario[0] }}">
+                    <input type="hidden" name="excluir_id" value="{{ usuario.id }}">
                     <input type="submit" value="🗑️ Excluir">
                 </form>
             </td>
@@ -117,14 +115,11 @@
         </tr>
         {% for u in pendentes %}
         <tr>
-            <td>{{ u[0] }}</td>
-            <td>{{ u[1] }}</td>
-            <td><a href="{{ url_for('autorizar', id=u[0]) }}" class="button">✔️ Autorizar</a></td>
+            <td>{{ u.id }}</td>
+            <td>{{ u.username }}</td>
+            <td><a href="{{ url_for('autorizar', id=u.id) }}" class="button">✔️ Autorizar</a></td>
         </tr>
         {% endfor %}
     </table>
 </body>
 </html>
-
-
-  

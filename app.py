@@ -12,13 +12,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
 db = SQLAlchemy(app)
 
-# ✏️ Função de limpeza
 def limpar_texto(texto):
     texto = texto.upper()
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto
 
-# 🧱 Modelos
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -37,7 +35,6 @@ class Pessoa(db.Model):
     octopus = db.Column(db.String(255))
     municipio = db.Column(db.String(255))
 
-# 🚪 Login
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -49,7 +46,7 @@ def login():
         if user:
             if user.ativo:
                 session['usuario_logado'] = username
-                session['is_admin'] = (user.tipo == 'adm')
+                session['is_admin'] = (user.tipo.lower() == 'admin')
                 return redirect(url_for('menu_principal'))
             else:
                 return '⛔ Aguarde liberação do administrador.'
@@ -57,13 +54,11 @@ def login():
             return '⚠️ Login inválido.'
     return render_template('login.html')
 
-# 🧭 Menu principal
 @app.route('/menu')
 def menu_principal():
     is_admin = session.get('is_admin', False)
     return render_template('menu.html', is_admin=is_admin)
 
-# 🛂 Cadastro de usuário
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
@@ -85,7 +80,6 @@ def cadastro():
         return '✅ Cadastro enviado! Aguarde aprovação.'
     return render_template('cadastro.html')
 
-# 👩‍💼 Gerenciar usuários
 @app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
 def gerenciar_usuarios():
     if not session.get('is_admin'):
@@ -93,18 +87,21 @@ def gerenciar_usuarios():
 
     if request.method == 'POST':
         user_id = request.form.get('id')
+
         if 'nova_senha' in request.form:
             nova_senha = request.form['nova_senha']
             hash = hashlib.sha256(nova_senha.encode()).hexdigest()
             Usuario.query.filter_by(id=user_id).update({'password': hash})
             db.session.commit()
+
         elif 'excluir_id' in request.form:
             excluir_id = request.form['excluir_id']
             Usuario.query.filter_by(id=excluir_id).delete()
             db.session.commit()
+
         elif 'novo_tipo' in request.form:
             novo_tipo = request.form['novo_tipo']
-            if novo_tipo in ['adm', 'normal']:
+            if novo_tipo in ['admin', 'normal']:
                 Usuario.query.filter_by(id=user_id).update({'tipo': novo_tipo})
                 db.session.commit()
 
@@ -112,7 +109,6 @@ def gerenciar_usuarios():
     pendentes = Usuario.query.filter_by(ativo=False).all()
     return render_template('gerenciar_usuarios.html', usuarios=usuarios, pendentes=pendentes)
 
-# ✅ Autorizar usuários
 @app.route('/autorizar/<int:id>')
 def autorizar(id):
     if not session.get('is_admin'):
@@ -121,7 +117,6 @@ def autorizar(id):
     db.session.commit()
     return redirect(url_for('gerenciar_usuarios'))
 
-# 🎯 Cadastro de alvo
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
     if request.method == 'POST':
@@ -138,10 +133,10 @@ def cadastro_alvo():
             foto_nome = secure_filename(foto.filename)
             foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
 
-        existente = Pessoa.query.filter((Pessoa.nome == nome) | (Pessoa.vulgo == vulgo)).first()
+        existente = Pessoa.query.filter_by(nome=nome).first()
         if existente:
             total = Pessoa.query.count()
-            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome ou vulgo já cadastrados.", total=total)
+            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome já cadastrado.", total=total)
 
         nova_pessoa = Pessoa(
             nome=nome, vulgo=vulgo, foto=foto_nome,
@@ -155,8 +150,6 @@ def cadastro_alvo():
         return render_template('sucesso.html', mensagem="✅ Alvo cadastrado com sucesso!")
     total = Pessoa.query.count()
     return render_template('cadastro_alvo.html', total=total)
-
-# 🔎 Pesquisar alvo
 @app.route('/pesquisar_alvo', methods=['GET', 'POST'])
 def pesquisar_alvo():
     termo = ''
@@ -180,7 +173,6 @@ def pesquisar_alvo():
     is_admin = session.get('is_admin', False)
     return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
 
-# ✏️ Editar alvo
 @app.route('/editar_alvo', methods=['POST'])
 def editar_alvo():
     id_alvo = request.form['id']
@@ -199,7 +191,6 @@ def editar_alvo():
     db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
-# 🖼️ Atualizar foto
 @app.route('/atualizar_foto', methods=['POST'])
 def atualizar_foto():
     id_alvo = request.form['id']
@@ -211,7 +202,6 @@ def atualizar_foto():
         db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
-# 🗑️ Excluir alvo
 @app.route('/excluir_alvo', methods=['POST'])
 def excluir_alvo():
     id_alvo = request.form['id']
@@ -219,13 +209,11 @@ def excluir_alvo():
     db.session.commit()
     return redirect(url_for('pesquisar_alvo'))
 
-# 🚪 Logout
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# 🌐 IP local (apenas para debug em rede interna)
 def mostrar_ip_local():
     try:
         hostname = socket.gethostname()
@@ -234,7 +222,12 @@ def mostrar_ip_local():
     except Exception as e:
         print("⚠️ IP local não detectado:", e)
 
-# 🔃 Execução principal (local apenas)
+@app.route('/verificar_nome')
+def verificar_nome():
+    nome = limpar_texto(request.args.get('nome', ''))
+    existe = Pessoa.query.filter_by(nome=nome).first()
+    return "existente" if existe else "disponivel"
+
 if __name__ == '__main__':
     print("🚀 Iniciando o sistema...")
     mostrar_ip_local()

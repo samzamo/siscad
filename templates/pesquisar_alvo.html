@@ -43,7 +43,6 @@
       font-size: 16px;
     }
 
-    /* Botão azul padrão */
     button {
       background-color: #0d8df7;
       color: white;
@@ -59,7 +58,6 @@
       background-color: #0092cc;
     }
 
-    /* Botões de resultado da pesquisa em laranja */
     .resultado-button {
       background-color: #f08c00;
       color: white;
@@ -85,13 +83,31 @@
       box-shadow: 0 0 10px #888;
     }
 
+    .alvo-info-flex {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
     .alvo-info img {
-      max-width: 100%;
+      max-width: 220px;
       height: auto;
+      max-height: 350px;
+      object-fit: contain;
       border-radius: 12px;
       border: 2px solid #064d26;
-      margin: 10px auto;
-      display: block;
+      flex-shrink: 0;
+    }
+
+    .alvo-dados {
+      flex: 1;
+      min-width: 240px;
+      max-width: 100%;
+    }
+
+    .alvo-dados p {
+      margin: 8px 0;
     }
 
     .anotacoes-box {
@@ -102,26 +118,68 @@
       border: 1px solid #ccc;
       max-height: 300px;
       overflow-y: auto;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
 
     @media screen and (max-width: 600px) {
-      .form-container { padding: 20px; }
-      input, textarea, select, button { font-size: 14px; }
+      .alvo-info-flex { flex-direction: column; align-items: center; }
+    }
+
+    .centered {
+      text-align: center;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .modal-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 95vh;
+      overflow-y: auto;
+      box-shadow: 0 0 12px #000;
+      position: relative;
+    }
+
+    .modal-box h3 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .close-button {
+      background-color: #ff4c4c;
+      color: white;
+      font-weight: bold;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      float: right;
+      margin-top: -10px;
+      margin-right: -10px;
+    }
+
+    .close-button:hover {
+      background-color: #cc0000;
     }
   </style>
   <script>
-    function toggleEdicao() {
-      const box = document.getElementById("box-edicao");
-      const btn = document.getElementById("botao-toggle");
-
-      if (box.style.display === "none" || box.style.display === "") {
-        box.style.display = "block";
-        btn.innerText = "Fechar edição";
-      } else {
-        box.style.display = "none";
-        btn.innerText = "Alterar dados";
-      }
+    function abrirModal() {
+      document.getElementById("modal-edicao").style.display = "flex";
+    }
+    function fecharModal() {
+      document.getElementById("modal-edicao").style.display = "none";
     }
   </script>
 </head>
@@ -132,14 +190,12 @@
 
       <h2>Pesquisar Alvo</h2>
 
-      <!-- 🔍 Botão de pesquisa com espaçamento abaixo -->
       <form method="POST" style="margin-bottom: 15px;">
         <input type="text" name="termo" placeholder="nome ou vulgo" value="{{ termo }}" required>
         <input type="text" name="bairro" placeholder="bairro (opcional)" value="{{ bairro }}">
         <button type="submit">🔍 pesquisar</button>
       </form>
 
-      <!-- 🏠 Botão de voltar ao menu -->
       <form action="/menu">
         <button type="submit">🏠 voltar ao menu</button>
       </form>
@@ -149,64 +205,73 @@
           <h3>Resultados:</h3>
           {% for r in resultados %}
             <form method="GET">
-              <input type="hidden" name="id" value="{{ r[0] }}">
-              <button type="submit" class="resultado-button">{{ r[1] }} – {{ r[2] }}</button>
+              <input type="hidden" name="id" value="{{ r.id }}">
+              <button type="submit" class="resultado-button">{{ r.nome }} – {{ r.vulgo }}</button>
             </form>
           {% endfor %}
         </div>
       {% endif %}
-
       {% if alvo %}
         <div class="alvo-info">
           <h3>Alvo Selecionado</h3>
+          <div class="alvo-info-flex">
+            {% if alvo.foto %}
+              <img src="{{ url_for('static', filename='IMAGEM/' + alvo.foto) }}">
+            {% endif %}
 
-          {% if alvo[3] %}
-            <img src="{{ url_for('static', filename='IMAGEM/' + alvo[3]) }}">
-          {% endif %}
+            <div class="alvo-dados">
+              <p><strong>Nome:</strong> {{ alvo.nome }}</p>
+              <p><strong>Vulgo:</strong> {{ alvo.vulgo }}</p>
+              <p><strong>Genitora:</strong> {{ alvo.genitora }}</p>
+              <p><strong>Município:</strong> {{ alvo.municipio }}</p>
+              <p><strong>Bairro:</strong> {{ alvo.bairro }}</p>
+              <p><strong>Octopus:</strong> {{ alvo.octopus }}</p>
 
-          <p><strong>Nome:</strong> {{ alvo[1] }}</p>
-          <p><strong>Vulgo:</strong> {{ alvo[2] }}</p>
-          <p><strong>Genitora:</strong> {{ alvo[4] }}</p>
-          <p><strong>Município:</strong> {{ alvo[8] }}</p>
-          <p><strong>Bairro:</strong> {{ alvo[5] }}</p>
-          <p><strong>Octopus:</strong> {{ alvo[7] }}</p>
+              <button type="button" onclick="abrirModal()">✏️ Alterar dados</button>
 
-          <p><strong>Anotações:</strong></p>
-          <div class="anotacoes-box">{{ alvo[6] }}</div>
-
-          <!-- 🔘 Botão para abrir/fechar campos de edição -->
-          <button type="button" id="botao-toggle" onclick="toggleEdicao()">Alterar dados</button>
-
-          <!-- ✏️ Edição oculta por padrão -->
-          <div id="box-edicao" style="display:none; margin-top:20px;">
-            <form method="POST" action="/editar_alvo">
-              <input type="hidden" name="id" value="{{ alvo[0] }}">
-              <input type="text" name="nome" value="{{ alvo[1] }}" placeholder="nome">
-              <input type="text" name="vulgo" value="{{ alvo[2] }}" placeholder="vulgo">
-              <input type="text" name="genitora" value="{{ alvo[4] }}" placeholder="genitora">
-              <input type="text" name="municipio" value="{{ alvo[8] }}" placeholder="município">
-              <input type="text" name="bairro" value="{{ alvo[5] }}" placeholder="bairro">
-              <textarea name="anotacoes" rows="6" placeholder="anotações">{{ alvo[6] }}</textarea>
-              <input type="text" name="octopus" value="{{ alvo[7] }}" placeholder="octopus">
-              <button type="submit">salvar alterações</button>
-            </form>
-
-            <form method="POST" enctype="multipart/form-data" action="/atualizar_foto">
-              <input type="hidden" name="id" value="{{ alvo[0] }}">
-              <input type="file" name="nova_foto" accept="image/*" required>
-              <button type="submit">atualizar foto</button>
-            </form>
+              {% if is_admin %}
+                <form method="POST" action="/excluir_alvo" onsubmit="return confirm('Tem certeza que deseja excluir este alvo?')">
+                  <input type="hidden" name="id" value="{{ alvo.id }}">
+                  <button type="submit" style="background-color:#ff4c4c;">🗑️ excluir cadastro</button>
+                </form>
+              {% endif %}
+            </div>
           </div>
 
-          {% if is_admin %}
-            <form method="POST" action="/excluir_alvo" onsubmit="return confirm('Tem certeza que deseja excluir este alvo?')">
-              <input type="hidden" name="id" value="{{ alvo[0] }}">
-              <button type="submit" style="background-color:#ff4c4c;">🗑️ excluir cadastro</button>
-            </form>
-          {% endif %}
+          <!-- 📓 ANOTAÇÕES CENTRALIZADAS -->
+          <div class="centered" style="margin-top: 20px;">
+            <h4>Anotações:</h4>
+            <div class="anotacoes-box">{{ alvo.anotacoes }}</div>
+          </div>
         </div>
       {% endif %}
 
+    </div>
+  </div>
+
+  <!-- 🪟 MODAL DE EDIÇÃO FLUTUANTE -->
+  <div id="modal-edicao" class="modal-overlay">
+    <div class="modal-box">
+      <button type="button" class="close-button" onclick="fecharModal()">❌ fechar</button>
+      <h3>Editar Dados do Alvo</h3>
+
+      <form method="POST" action="/editar_alvo">
+        <input type="hidden" name="id" value="{{ alvo.id }}">
+        <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
+        <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
+        <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
+        <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
+        <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
+        <textarea name="anotacoes" rows="6" placeholder="anotações">{{ alvo.anotacoes }}</textarea>
+        <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
+        <button type="submit">💾 salvar alterações</button>
+      </form>
+
+      <form method="POST" enctype="multipart/form-data" action="/atualizar_foto">
+        <input type="hidden" name="id" value="{{ alvo.id }}">
+        <input type="file" name="nova_foto" accept="image/*" required>
+        <button type="submit">🖼️ atualizar foto</button>
+      </form>
     </div>
   </div>
 

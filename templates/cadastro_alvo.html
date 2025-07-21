@@ -63,8 +63,7 @@
 
   <script>
     const bairrosPorMunicipio = {
-      Fortaleza: [
-        "Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
+      Fortaleza: [ "Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
         "Amadeu Furtado", "Ancuri", "Antônio Bezerra", "Antônio Diogo", "Autran Nunes",
         "Barra do Ceará", "Barroso", "Bela Vista", "Benfica", "Boa Vista", "Bom Futuro",
         "Bom Jardim", "Bonsucesso", "Cachoeirinha", "Cais do Porto", "Cajazeiras", "Cambeba",
@@ -118,6 +117,11 @@
         return;
       }
 
+      // ⏳ Mostra mensagem de verificação
+      aviso.textContent = "⏳ Verificando nome...";
+      aviso.style.color = "#555";
+      botaoSalvar.disabled = true;
+
       fetch(`/verificar_nome?nome=${encodeURIComponent(nome)}`)
         .then(res => res.text())
         .then(data => {
@@ -126,9 +130,15 @@
             aviso.style.color = "#900";
             botaoSalvar.disabled = true;
           } else {
-            aviso.textContent = "";
+            aviso.textContent = "✔️ Nome disponível para cadastro.";
+            aviso.style.color = "#080";
             botaoSalvar.disabled = false;
           }
+        })
+        .catch(() => {
+          aviso.textContent = "⚠️ Erro ao verificar nome.";
+          aviso.style.color = "#900";
+          botaoSalvar.disabled = false;
         });
     }
   </script>
@@ -163,7 +173,7 @@
         </select>
 
         <textarea name="anotacoes" placeholder="Anotações sobre o alvo" rows="4"></textarea>
-        <input type="text" name="octopus" placeholder="Octopus (classificação/código interno)">
+        <input type="text" name="octopus" placeholder="endereço ">
         <input type="file" name="foto" accept="image/*">
 
         <button type="submit">Salvar</button>
@@ -175,6 +185,6 @@
     </div>
   </div>
 
-  <h3>Total de alvos cadastrados: {{ total }}</h3>
+  <h3 style="text-align:center">Total de alvos cadastrados: {{ total }}</h3>
 </body>
 </html>
