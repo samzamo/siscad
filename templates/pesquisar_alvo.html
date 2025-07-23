@@ -200,6 +200,14 @@
         <button type="submit">🏠 voltar ao menu</button>
       </form>
 
+      <!-- ✅ MENSAGEM DE SEM RESULTADOS -->
+      {% if mensagem %}
+        <p style="text-align:center; font-weight:bold; color:#a94442; background-color:#f2dede; padding:10px; border-radius:8px;">
+          {{ mensagem }}
+        </p>
+      {% endif %}
+
+      <!-- ✅ RESULTADOS -->
       {% if resultados %}
         <div class="resultado">
           <h3>Resultados:</h3>
@@ -211,6 +219,8 @@
           {% endfor %}
         </div>
       {% endif %}
+
+      <!-- ✅ ALVO SELECIONADO -->
       {% if alvo %}
         <div class="alvo-info">
           <h3>Alvo Selecionado</h3>
@@ -238,7 +248,6 @@
             </div>
           </div>
 
-          <!-- 📓 ANOTAÇÕES CENTRALIZADAS -->
           <div class="centered" style="margin-top: 20px;">
             <h4>Anotações:</h4>
             <div class="anotacoes-box">{{ alvo.anotacoes }}</div>
@@ -260,7 +269,7 @@
         <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
         <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
         <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
-        <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
+         <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
         <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
         <textarea name="anotacoes" rows="6" placeholder="anotações">{{ alvo.anotacoes }}</textarea>
         <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">

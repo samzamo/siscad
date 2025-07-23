@@ -7,7 +7,10 @@ app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
 
 # ✅ Conexão com banco PostgreSQL no Neon (corrigida e otimizada)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&connect_timeout=10'
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+    'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb'
+    '?sslmode=require&connect_timeout=20'
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
@@ -36,7 +39,6 @@ class Pessoa(db.Model):
     anotacoes = db.Column(db.Text)
     foto = db.Column(db.String)
     octopus = db.Column(db.String)
-
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -56,12 +58,14 @@ def login():
             return render_template('login.html', erro='⚠️ Login inválido.')
     return render_template('login.html')
 
+
 @app.route('/menu')
 def menu_principal():
     if 'usuario_logado' not in session:
         return redirect(url_for('login'))
     is_admin = session.get('is_admin', False)
     return render_template('menu.html', is_admin=is_admin)
+
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -122,8 +126,10 @@ def cadastro_alvo():
         db.session.commit()
         total = Pessoa.query.count()
         return render_template('sucesso.html', mensagem="✅ Alvo cadastrado com sucesso!")
+    
     total = Pessoa.query.count()
     return render_template('cadastro_alvo.html', total=total)
+
 @app.route('/pesquisar_alvo', methods=['GET', 'POST'])
 def pesquisar_alvo():
     if 'usuario_logado' not in session:
@@ -133,22 +139,37 @@ def pesquisar_alvo():
     bairro = ''
     resultados = []
     alvo = None
+    mensagem = ''
 
     if request.method == 'POST':
         termo = limpar_texto(request.form['termo'])
         bairro = limpar_texto(request.form['bairro'])
+
         query = Pessoa.query.filter(
             (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
         )
         if bairro:
             query = query.filter(Pessoa.bairro.ilike(f'%{bairro}%'))
+
         resultados = query.all()
+
+        # ✅ Mensagem simples se não houver resultados
+        if not resultados:
+            mensagem = "Não há resultados para este nome."
 
     if request.args.get('id'):
         alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
 
     is_admin = session.get('is_admin', False)
-    return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
+    return render_template(
+        'pesquisar_alvo.html',
+        termo=termo,
+        bairro=bairro,
+        resultados=resultados,
+        alvo=alvo,
+        is_admin=is_admin,
+        mensagem=mensagem
+    )
 
 @app.route('/editar_alvo', methods=['POST'])
 def editar_alvo():
@@ -171,6 +192,7 @@ def editar_alvo():
     db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
+
 @app.route('/atualizar_foto', methods=['POST'])
 def atualizar_foto():
     if 'usuario_logado' not in session:
@@ -185,6 +207,7 @@ def atualizar_foto():
         db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
+
 @app.route('/excluir_alvo', methods=['POST'])
 def excluir_alvo():
     if 'usuario_logado' not in session:
@@ -194,6 +217,7 @@ def excluir_alvo():
     Pessoa.query.filter_by(id=id_alvo).delete()
     db.session.commit()
     return redirect(url_for('pesquisar_alvo'))
+
 
 @app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
 def gerenciar_usuarios():
@@ -224,6 +248,7 @@ def gerenciar_usuarios():
     pendentes = Usuario.query.filter_by(ativo=False).all()
     return render_template('gerenciar_usuarios.html', usuarios=usuarios, pendentes=pendentes)
 
+
 @app.route('/autorizar/<int:id>')
 def autorizar(id):
     if not session.get('is_admin'):
@@ -232,16 +257,19 @@ def autorizar(id):
     db.session.commit()
     return redirect(url_for('gerenciar_usuarios'))
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
 
 @app.route('/verificar_nome')
 def verificar_nome():
     nome = limpar_texto(request.args.get('nome', ''))
     existe = Pessoa.query.filter_by(nome=nome).first()
     return "existente" if existe else "disponivel"
+
 
 def mostrar_ip_local():
     try:
@@ -251,7 +279,9 @@ def mostrar_ip_local():
     except Exception as e:
         print("⚠️ IP local não detectado:", e)
 
+
 if __name__ == '__main__':
     print("🚀 Iniciando o sistema...")
     mostrar_ip_local()
     app.run(debug=True, host='0.0.0.0', port=5000)
+

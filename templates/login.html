@@ -40,11 +40,26 @@
     button:hover {
       background-color: #0070cc;
     }
+    .mensagem-sucesso {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 0 5px #aaa;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h2>SISTEMA DE ACESSO</h2>
+
+    {% if sucesso %}
+      <div class="mensagem-sucesso">{{ sucesso }}</div>
+    {% endif %}
+
     <form method="POST">
       <input type="text" name="username" placeholder="usuário" required><br>
       <input type="password" name="password" placeholder="senha" required><br>
@@ -56,5 +71,3 @@
   </div>
 </body>
 </html>
-
-
