@@ -6,10 +6,11 @@ import hashlib, os, unicodedata, socket
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
 
-# ✅ Conexão com banco PostgreSQL no Neon (corrigida)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require'
+# ✅ Conexão com banco PostgreSQL no Neon (corrigida e otimizada)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&connect_timeout=10'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 db = SQLAlchemy(app)
 
 def limpar_texto(texto):
@@ -80,8 +81,12 @@ def cadastro():
         novo_usuario = Usuario(username=username, password=password_hash)
         db.session.add(novo_usuario)
         db.session.commit()
-        return render_template('cadastro.html', sucesso='✅ Cadastro enviado! Aguarde aprovação.')
+
+        # ✅ Redireciona para login com mensagem de sucesso
+        return render_template('login.html', sucesso='✅ Cadastro realizado com sucesso! Espere a liberação do administrador.')
+    
     return render_template('cadastro.html')
+
 
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
