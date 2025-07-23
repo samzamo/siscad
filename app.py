@@ -6,8 +6,8 @@ import hashlib, os, unicodedata, socket
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
 
-# 📦 Conexão com banco PostgreSQL no Render
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://siscad_user:V1q2FuX6g6f2hAwgjznkFTU0XO4RUHKE@dpg-d1u76qur433s73eedafg-a.oregon-postgres.render.com/siscad'
+# ✅ Conexão com banco PostgreSQL no Neon (corrigida)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
 db = SQLAlchemy(app)
@@ -25,15 +25,16 @@ class Usuario(db.Model):
     tipo = db.Column(db.String(10), default='normal')
 
 class Pessoa(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(255), nullable=False)
-    vulgo = db.Column(db.String(255))
-    foto = db.Column(db.String(255))
-    genitora = db.Column(db.String(255))
-    bairro = db.Column(db.String(255))
+    __tablename__ = 'pessoa'
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String, nullable=False)
+    vulgo = db.Column(db.String)
+    genitora = db.Column(db.String)
+    bairro = db.Column(db.String)
+    municipio = db.Column(db.String)
     anotacoes = db.Column(db.Text)
-    octopus = db.Column(db.String(255))
-    municipio = db.Column(db.String(255))
+    foto = db.Column(db.String)
+    octopus = db.Column(db.String)
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -49,13 +50,15 @@ def login():
                 session['is_admin'] = (user.tipo.lower() == 'admin')
                 return redirect(url_for('menu_principal'))
             else:
-                return '⛔ Aguarde liberação do administrador.'
+                return render_template('login.html', erro='⛔ Aguarde liberação do administrador.')
         else:
-            return '⚠️ Login inválido.'
+            return render_template('login.html', erro='⚠️ Login inválido.')
     return render_template('login.html')
 
 @app.route('/menu')
 def menu_principal():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
     is_admin = session.get('is_admin', False)
     return render_template('menu.html', is_admin=is_admin)
 
@@ -67,18 +70,125 @@ def cadastro():
         confirmar = request.form['confirmar']
 
         if senha != confirmar:
-            return '⚠️ As senhas não coincidem.'
+            return render_template('cadastro.html', erro='⚠️ As senhas não coincidem.')
 
         password_hash = hashlib.sha256(senha.encode()).hexdigest()
 
         if Usuario.query.filter_by(username=username).first():
-            return '⚠️ Usuário já existe.'
+            return render_template('cadastro.html', erro='⚠️ Usuário já existe.')
 
         novo_usuario = Usuario(username=username, password=password_hash)
         db.session.add(novo_usuario)
         db.session.commit()
-        return '✅ Cadastro enviado! Aguarde aprovação.'
+        return render_template('cadastro.html', sucesso='✅ Cadastro enviado! Aguarde aprovação.')
     return render_template('cadastro.html')
+
+@app.route('/cadastro_alvo', methods=['GET', 'POST'])
+def cadastro_alvo():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        nome = limpar_texto(request.form['nome'])
+        vulgo = limpar_texto(request.form['vulgo'])
+        genitora = limpar_texto(request.form['genitora'])
+        bairro = limpar_texto(request.form['bairro'])
+        municipio = limpar_texto(request.form['municipio'])
+        anotacoes = request.form['anotacoes']
+        octopus = limpar_texto(request.form['octopus'])
+        foto = request.files['foto']
+        foto_nome = ''
+        if foto and foto.filename:
+            foto_nome = secure_filename(foto.filename)
+            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
+
+        existente = Pessoa.query.filter_by(nome=nome).first()
+        if existente:
+            total = Pessoa.query.count()
+            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome já cadastrado.", total=total)
+
+        nova_pessoa = Pessoa(
+            nome=nome, vulgo=vulgo, foto=foto_nome,
+            genitora=genitora, bairro=bairro,
+            anotacoes=anotacoes, octopus=octopus,
+            municipio=municipio
+        )
+        db.session.add(nova_pessoa)
+        db.session.commit()
+        total = Pessoa.query.count()
+        return render_template('sucesso.html', mensagem="✅ Alvo cadastrado com sucesso!")
+    total = Pessoa.query.count()
+    return render_template('cadastro_alvo.html', total=total)
+@app.route('/pesquisar_alvo', methods=['GET', 'POST'])
+def pesquisar_alvo():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    termo = ''
+    bairro = ''
+    resultados = []
+    alvo = None
+
+    if request.method == 'POST':
+        termo = limpar_texto(request.form['termo'])
+        bairro = limpar_texto(request.form['bairro'])
+        query = Pessoa.query.filter(
+            (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
+        )
+        if bairro:
+            query = query.filter(Pessoa.bairro.ilike(f'%{bairro}%'))
+        resultados = query.all()
+
+    if request.args.get('id'):
+        alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
+
+    is_admin = session.get('is_admin', False)
+    return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
+
+@app.route('/editar_alvo', methods=['POST'])
+def editar_alvo():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    id_alvo = request.form['id']
+    alvo = Pessoa.query.get(id_alvo)
+    if not alvo:
+        return '❌ Alvo não encontrado.'
+
+    alvo.nome = limpar_texto(request.form['nome'])
+    alvo.vulgo = limpar_texto(request.form['vulgo'])
+    alvo.genitora = limpar_texto(request.form['genitora'])
+    alvo.bairro = limpar_texto(request.form['bairro'])
+    alvo.municipio = limpar_texto(request.form['municipio'])
+    alvo.anotacoes = request.form['anotacoes']
+    alvo.octopus = limpar_texto(request.form['octopus'])
+
+    db.session.commit()
+    return redirect(url_for('pesquisar_alvo', id=id_alvo))
+
+@app.route('/atualizar_foto', methods=['POST'])
+def atualizar_foto():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    id_alvo = request.form['id']
+    nova_foto = request.files['nova_foto']
+    if nova_foto and nova_foto.filename:
+        foto_nome = secure_filename(nova_foto.filename)
+        nova_foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
+        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_nome})
+        db.session.commit()
+    return redirect(url_for('pesquisar_alvo', id=id_alvo))
+
+@app.route('/excluir_alvo', methods=['POST'])
+def excluir_alvo():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    id_alvo = request.form['id']
+    Pessoa.query.filter_by(id=id_alvo).delete()
+    db.session.commit()
+    return redirect(url_for('pesquisar_alvo'))
 
 @app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
 def gerenciar_usuarios():
@@ -117,102 +227,16 @@ def autorizar(id):
     db.session.commit()
     return redirect(url_for('gerenciar_usuarios'))
 
-@app.route('/cadastro_alvo', methods=['GET', 'POST'])
-def cadastro_alvo():
-    if request.method == 'POST':
-        nome = limpar_texto(request.form['nome'])
-        vulgo = limpar_texto(request.form['vulgo'])
-        genitora = limpar_texto(request.form['genitora'])
-        bairro = limpar_texto(request.form['bairro'])
-        municipio = limpar_texto(request.form['municipio'])
-        anotacoes = request.form['anotacoes']
-        octopus = limpar_texto(request.form['octopus'])
-        foto = request.files['foto']
-        foto_nome = ''
-        if foto and foto.filename:
-            foto_nome = secure_filename(foto.filename)
-            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
-
-        existente = Pessoa.query.filter_by(nome=nome).first()
-        if existente:
-            total = Pessoa.query.count()
-            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome já cadastrado.", total=total)
-
-        nova_pessoa = Pessoa(
-            nome=nome, vulgo=vulgo, foto=foto_nome,
-            genitora=genitora, bairro=bairro,
-            anotacoes=anotacoes, octopus=octopus,
-            municipio=municipio
-        )
-        db.session.add(nova_pessoa)
-        db.session.commit()
-        total = Pessoa.query.count()
-        return render_template('sucesso.html', mensagem="✅ Alvo cadastrado com sucesso!")
-    total = Pessoa.query.count()
-    return render_template('cadastro_alvo.html', total=total)
-@app.route('/pesquisar_alvo', methods=['GET', 'POST'])
-def pesquisar_alvo():
-    termo = ''
-    bairro = ''
-    resultados = []
-    alvo = None
-
-    if request.method == 'POST':
-        termo = limpar_texto(request.form['termo'])
-        bairro = limpar_texto(request.form['bairro'])
-        query = Pessoa.query.filter(
-            (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
-        )
-        if bairro:
-            query = query.filter(Pessoa.bairro.ilike(f'%{bairro}%'))
-        resultados = query.all()
-
-    if request.args.get('id'):
-        alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
-
-    is_admin = session.get('is_admin', False)
-    return render_template('pesquisar_alvo.html', termo=termo, bairro=bairro, resultados=resultados, alvo=alvo, is_admin=is_admin)
-
-@app.route('/editar_alvo', methods=['POST'])
-def editar_alvo():
-    id_alvo = request.form['id']
-    alvo = Pessoa.query.get(id_alvo)
-    if not alvo:
-        return '❌ Alvo não encontrado.'
-
-    alvo.nome = limpar_texto(request.form['nome'])
-    alvo.vulgo = limpar_texto(request.form['vulgo'])
-    alvo.genitora = limpar_texto(request.form['genitora'])
-    alvo.bairro = limpar_texto(request.form['bairro'])
-    alvo.municipio = limpar_texto(request.form['municipio'])
-    alvo.anotacoes = request.form['anotacoes']
-    alvo.octopus = limpar_texto(request.form['octopus'])
-
-    db.session.commit()
-    return redirect(url_for('pesquisar_alvo', id=id_alvo))
-
-@app.route('/atualizar_foto', methods=['POST'])
-def atualizar_foto():
-    id_alvo = request.form['id']
-    nova_foto = request.files['nova_foto']
-    if nova_foto and nova_foto.filename:
-        foto_nome = secure_filename(nova_foto.filename)
-        nova_foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
-        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_nome})
-        db.session.commit()
-    return redirect(url_for('pesquisar_alvo', id=id_alvo))
-
-@app.route('/excluir_alvo', methods=['POST'])
-def excluir_alvo():
-    id_alvo = request.form['id']
-    Pessoa.query.filter_by(id=id_alvo).delete()
-    db.session.commit()
-    return redirect(url_for('pesquisar_alvo'))
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+@app.route('/verificar_nome')
+def verificar_nome():
+    nome = limpar_texto(request.args.get('nome', ''))
+    existe = Pessoa.query.filter_by(nome=nome).first()
+    return "existente" if existe else "disponivel"
 
 def mostrar_ip_local():
     try:
@@ -221,12 +245,6 @@ def mostrar_ip_local():
         print(f"\n🌐 Site disponível em: http://{ip_local}:5000 (rede local)\n")
     except Exception as e:
         print("⚠️ IP local não detectado:", e)
-
-@app.route('/verificar_nome')
-def verificar_nome():
-    nome = limpar_texto(request.args.get('nome', ''))
-    existe = Pessoa.query.filter_by(nome=nome).first()
-    return "existente" if existe else "disponivel"
 
 if __name__ == '__main__':
     print("🚀 Iniciando o sistema...")
