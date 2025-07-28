@@ -1,25 +1,37 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.utils import secure_filename
 import hashlib, os, unicodedata, socket
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
 
-# ✅ Conexão com banco PostgreSQL no Neon (corrigida e otimizada)
+# 🔗 Conexão com banco PostgreSQL no Neon
 app.config['SQLALCHEMY_DATABASE_URI'] = (
     'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb'
     '?sslmode=require&connect_timeout=20'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'static/IMAGEM'
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
 db = SQLAlchemy(app)
+
+# 🌥️ Configuração do Cloudinary
+cloudinary.config( 
+  cloud_name = 'dygav0zig', 
+  api_key = '356954525268762', 
+  api_secret = '9KXP41yJPdXDj78aK_S6CKl_9-I' 
+)
 
 def limpar_texto(texto):
     texto = texto.upper()
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto
+
+def upload_image_to_cloudinary(file_storage):
+    result = cloudinary.uploader.upload(file_storage)
+    return result['secure_url']
 
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,8 +49,9 @@ class Pessoa(db.Model):
     bairro = db.Column(db.String)
     municipio = db.Column(db.String)
     anotacoes = db.Column(db.Text)
-    foto = db.Column(db.String)
+    foto = db.Column(db.String)  # Agora armazena a URL da imagem no Cloudinary
     octopus = db.Column(db.String)
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -58,14 +71,12 @@ def login():
             return render_template('login.html', erro='⚠️ Login inválido.')
     return render_template('login.html')
 
-
 @app.route('/menu')
 def menu_principal():
     if 'usuario_logado' not in session:
         return redirect(url_for('login'))
     is_admin = session.get('is_admin', False)
     return render_template('menu.html', is_admin=is_admin)
-
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -86,12 +97,9 @@ def cadastro():
         db.session.add(novo_usuario)
         db.session.commit()
 
-        # ✅ Redireciona para login com mensagem de sucesso
         return render_template('login.html', sucesso='✅ Cadastro realizado com sucesso! Espere a liberação do administrador.')
     
     return render_template('cadastro.html')
-
-
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
     if 'usuario_logado' not in session:
@@ -106,10 +114,10 @@ def cadastro_alvo():
         anotacoes = request.form['anotacoes']
         octopus = limpar_texto(request.form['octopus'])
         foto = request.files['foto']
-        foto_nome = ''
+        foto_url = ''
+
         if foto and foto.filename:
-            foto_nome = secure_filename(foto.filename)
-            foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
+            foto_url = upload_image_to_cloudinary(foto)
 
         existente = Pessoa.query.filter_by(nome=nome).first()
         if existente:
@@ -117,7 +125,7 @@ def cadastro_alvo():
             return render_template('cadastro_alvo.html', mensagem="⚠️ Nome já cadastrado.", total=total)
 
         nova_pessoa = Pessoa(
-            nome=nome, vulgo=vulgo, foto=foto_nome,
+            nome=nome, vulgo=vulgo, foto=foto_url,
             genitora=genitora, bairro=bairro,
             anotacoes=anotacoes, octopus=octopus,
             municipio=municipio
@@ -153,7 +161,6 @@ def pesquisar_alvo():
 
         resultados = query.all()
 
-        # ✅ Mensagem simples se não houver resultados
         if not resultados:
             mensagem = "Não há resultados para este nome."
 
@@ -192,7 +199,6 @@ def editar_alvo():
     db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
-
 @app.route('/atualizar_foto', methods=['POST'])
 def atualizar_foto():
     if 'usuario_logado' not in session:
@@ -201,12 +207,10 @@ def atualizar_foto():
     id_alvo = request.form['id']
     nova_foto = request.files['nova_foto']
     if nova_foto and nova_foto.filename:
-        foto_nome = secure_filename(nova_foto.filename)
-        nova_foto.save(os.path.join(app.config['UPLOAD_FOLDER'], foto_nome))
-        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_nome})
+        foto_url = upload_image_to_cloudinary(nova_foto)
+        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_url})
         db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
-
 
 @app.route('/excluir_alvo', methods=['POST'])
 def excluir_alvo():
@@ -217,7 +221,6 @@ def excluir_alvo():
     Pessoa.query.filter_by(id=id_alvo).delete()
     db.session.commit()
     return redirect(url_for('pesquisar_alvo'))
-
 
 @app.route('/gerenciar_usuarios', methods=['GET', 'POST'])
 def gerenciar_usuarios():
@@ -248,7 +251,6 @@ def gerenciar_usuarios():
     pendentes = Usuario.query.filter_by(ativo=False).all()
     return render_template('gerenciar_usuarios.html', usuarios=usuarios, pendentes=pendentes)
 
-
 @app.route('/autorizar/<int:id>')
 def autorizar(id):
     if not session.get('is_admin'):
@@ -257,19 +259,16 @@ def autorizar(id):
     db.session.commit()
     return redirect(url_for('gerenciar_usuarios'))
 
-
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
-
 
 @app.route('/verificar_nome')
 def verificar_nome():
     nome = limpar_texto(request.args.get('nome', ''))
     existe = Pessoa.query.filter_by(nome=nome).first()
     return "existente" if existe else "disponivel"
-
 
 def mostrar_ip_local():
     try:
@@ -279,9 +278,7 @@ def mostrar_ip_local():
     except Exception as e:
         print("⚠️ IP local não detectado:", e)
 
-
 if __name__ == '__main__':
     print("🚀 Iniciando o sistema...")
     mostrar_ip_local()
     app.run(debug=True, host='0.0.0.0', port=5000)
-

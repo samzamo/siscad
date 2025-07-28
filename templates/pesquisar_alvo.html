@@ -226,7 +226,7 @@
           <h3>Alvo Selecionado</h3>
           <div class="alvo-info-flex">
             {% if alvo.foto %}
-              <img src="{{ url_for('static', filename='IMAGEM/' + alvo.foto) }}">
+              <img src="{{ alvo.foto }}" alt="Foto do alvo">
             {% endif %}
 
             <div class="alvo-dados">
