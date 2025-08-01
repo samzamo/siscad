@@ -122,7 +122,13 @@ def cadastro_alvo():
         existente = Pessoa.query.filter_by(nome=nome).first()
         if existente:
             total = Pessoa.query.count()
-            return render_template('cadastro_alvo.html', mensagem="⚠️ Nome já cadastrado.", total=total)
+            # Envia o nome já existente para o template
+            return render_template(
+                'cadastro_alvo.html',
+                mensagem="⚠️ Nome já cadastrado.",
+                nome_existente=nome,
+                total=total
+            )
 
         nova_pessoa = Pessoa(
             nome=nome, vulgo=vulgo, foto=foto_url,

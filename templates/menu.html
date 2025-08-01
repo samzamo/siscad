@@ -2,22 +2,35 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Menu Principal</title>
   <style>
     body {
       background-color: #c6f6ff;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 50px;
+      padding: 20px;
     }
+
     h2 {
       margin-bottom: 30px;
       font-size: 24px;
     }
+
+    .form-container {
+      background-color: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 0 10px #aaa;
+      max-width: 400px;
+      width: 100%;
+    }
+
     button {
-      width: 220px;
+      width: 100%;
       padding: 12px;
-      margin: 12px;
+      margin: 12px 0;
       border: none;
       border-radius: 8px;
       background-color: #0090ff;
@@ -25,44 +38,64 @@
       font-weight: bold;
       cursor: pointer;
       font-size: 16px;
+      box-sizing: border-box;
     }
+
     button:hover {
       background-color: #0070cc;
     }
+
     form {
       display: block;
-      margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      button {
+        font-size: 18px;
+      }
+
+      .form-container {
+        padding: 20px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="form-wrapper">
-  <div class="form-container">
-  <h2>Menu Principal</h2>
+    <div class="form-container">
+      <h2>Menu Principal</h2>
 
-  <form action="/cadastro_alvo">
-    <button type="submit">cadastrar alvo</button>
-  </form>
+      <form action="/cadastro_alvo">
+        <button type="submit">cadastrar alvo</button>
+      </form>
 
-  <form action="/pesquisar_alvo">
-    <button type="submit">pesquisar alvo</button>
-  </form>
+      <form action="/pesquisar_alvo">
+        <button type="submit">pesquisar alvo</button>
+      </form>
 
-  {% if is_admin %}
-    <form action="/gerenciar_usuarios">
-      <button type="submit">gerenciar usuários</button>
-    </form>
+      {% if is_admin %}
+        <form action="/gerenciar_usuarios">
+          <button type="submit">gerenciar usuários</button>
+        </form>
 
-    <form action="/visualizar_todos">
-      <button type="submit">ver todos os cadastros</button>
-    </form>
-  {% endif %}
+        <form action="/visualizar_todos">
+          <button type="submit">ver todos os cadastros</button>
+        </form>
+      {% endif %}
 
-  <form action="/logout">
-  <button type="submit">sair</button>
-</form>
+      <form action="/logout">
+        <button type="submit">sair</button>
+      </form>
+    </div>
   </div>
-</div>
-
+  <h3 style="text-align:center">Total de alvos cadastrados: {{ total }}</h3>
 </body>
 </html>
