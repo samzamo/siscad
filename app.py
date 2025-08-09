@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 import hashlib, os, unicodedata, socket
 import cloudinary
 import cloudinary.uploader
@@ -76,8 +77,8 @@ def menu_principal():
     if 'usuario_logado' not in session:
         return redirect(url_for('login'))
     is_admin = session.get('is_admin', False)
-    return render_template('menu.html', is_admin=is_admin)
-
+    total = Pessoa.query.count()  # 👈 Adiciona a contagem de alvos
+    return render_template('menu.html', is_admin=is_admin, total=total)
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
@@ -154,6 +155,7 @@ def pesquisar_alvo():
     resultados = []
     alvo = None
     mensagem = ''
+    now = datetime.now().strftime("%d/%m/%Y %H:%M")
 
     if request.method == 'POST':
         termo = limpar_texto(request.form['termo'])
@@ -175,14 +177,15 @@ def pesquisar_alvo():
 
     is_admin = session.get('is_admin', False)
     return render_template(
-        'pesquisar_alvo.html',
-        termo=termo,
-        bairro=bairro,
-        resultados=resultados,
-        alvo=alvo,
-        is_admin=is_admin,
-        mensagem=mensagem
-    )
+         'pesquisar_alvo.html',
+    termo=termo,
+    bairro=bairro,
+    resultados=resultados,
+    alvo=alvo,
+    is_admin=is_admin,
+    mensagem=mensagem,
+    now=now  # 👈 envia a data atual para o template
+)
 
 @app.route('/editar_alvo', methods=['POST'])
 def editar_alvo():

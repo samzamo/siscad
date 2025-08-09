@@ -272,7 +272,12 @@
         <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
          <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
         <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
-        <textarea name="anotacoes" rows="6" placeholder="anotações">{{ alvo.anotacoes }}</textarea>
+        <textarea name="anotacoes" rows="10" placeholder="anotações">
+[{{ now }}] 
+⤵️ Digite abaixo a nova anotação...
+
+{{ alvo.anotacoes }}
+</textarea>
         <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
         <button type="submit">💾 salvar alterações</button>
       </form>
