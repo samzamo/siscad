@@ -5,6 +5,7 @@ import hashlib, os, unicodedata, socket
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+from flask import flash
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
@@ -214,6 +215,7 @@ def editar_alvo():
         alvo.foto = foto_url  # Atualiza direto no objeto
 
     db.session.commit()
+    flash('✅ Alterações salvas com sucesso!', 'sucesso')
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
 @app.route('/excluir_alvo', methods=['POST'])

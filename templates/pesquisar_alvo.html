@@ -189,12 +189,30 @@
     <div class="form-container">
 
       <h2>Pesquisar Alvo</h2>
+      
       {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
     {% for category, msg in messages %}
-      <p style="text-align:center; font-weight:bold; color:#3c763d; background-color:#dff0d8; padding:10px; border-radius:8px; border:1px solid #c9e2b3; margin: 10px 0;">
+      <div id="msg-flash" style="
+        position: fixed;
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: #d4edda;
+        color: #155724;
+        font-weight: bold;
+        padding: 16px 28px;
+        border-radius: 12px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.25);
+        border: 1px solid #c3e6cb;
+        z-index: 9999;">
         {{ msg }}
-      </p>
+      </div>
+      <script>
+        setTimeout(() => {
+          const el = document.getElementById('msg-flash');
+          if (el) el.style.display = 'none';
+        }, 3000); // some em 3 segundos
+      </script>
     {% endfor %}
   {% endif %}
 {% endwith %}
