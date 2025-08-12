@@ -5,18 +5,16 @@
   <title>Cadastro de Alvo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* Estilos mantidos iguais */
     * { box-sizing: border-box; }
     body {
       background-color: #b6ffe7;
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
     }
     .form-wrapper {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 30px;
+      display: flex; justify-content: center;
+      align-items: center; padding: 30px;
     }
     .form-container {
       background-color: #fcfcfc;
@@ -26,33 +24,22 @@
       width: 100%;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    h2, h3 {
-      text-align: center;
-      margin-top: 0;
-    }
+    h2, h3 { text-align: center; margin-top: 0; }
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border-radius: 8px;
+      width: 100%; padding: 10px;
+      margin: 8px 0; border-radius: 8px;
       border: 1px solid #aaa;
       font-size: 16px;
     }
     button {
-      width: 100%;
-      padding: 12px;
+      width: 100%; padding: 12px;
       margin-top: 10px;
-      border-radius: 8px;
-      border: none;
+      border-radius: 8px; border: none;
       background-color: #0e93ec;
-      color: white;
-      font-weight: bold;
-      font-size: 16px;
-      cursor: pointer;
+      color: white; font-weight: bold;
+      font-size: 16px; cursor: pointer;
     }
-    button:hover {
-      background-color: #007dd2;
-    }
+    button:hover { background-color: #007dd2; }
     @media screen and (max-width: 600px) {
       .form-wrapper { padding: 20px; }
       .form-container { padding: 20px; }
@@ -85,8 +72,7 @@
         "Praia de Iracema", "Prefeito José Walter", "Presidente Kennedy", "Quintino Cunha",
         "Rodolfo Teófilo", "Sabiaguaba", "Salinas", "São Bento", "São Gerardo",
         "São João do Tauape", "Sapiranga", "Serrinha", "Siqueira", "Varjota", "Vicente Pinzon",
-        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"
-      ],
+        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"],
       Caucaia: ["Parque Soledade", "Jurema", "Centro", "Tabapuá"],
       Maracanaú: ["Pajuçara", "Jardim Bandeirantes", "Centro", "Alto Alegre"]
     };
@@ -108,37 +94,32 @@
     function verificarNome() {
       const inputNome = document.querySelector('input[name="nome"]');
       const aviso = document.getElementById("aviso-nome");
-      const botaoSalvar = inputNome.closest("form").querySelector('button[type="submit"]');
-
       const nome = inputNome.value.trim();
+
       if (!nome) {
         aviso.textContent = "";
-        botaoSalvar.disabled = false;
+        aviso.style.color = "#555";
         return;
       }
 
-      // ⏳ Mostra mensagem de verificação
       aviso.textContent = "⏳ Verificando nome...";
       aviso.style.color = "#555";
-      botaoSalvar.disabled = true;
 
-      fetch(`/verificar_nome?nome=${encodeURIComponent(nome)}`)
-        .then(res => res.text())
+      fetch(`/verificar_nome?fmt=json&nome=${encodeURIComponent(nome)}`)
+        .then(res => res.json())
         .then(data => {
-          if (data === "existente") {
+          if (data.status === "existente" && data.id) {
             aviso.textContent = "⚠️ Este nome já está cadastrado.";
             aviso.style.color = "#900";
-            botaoSalvar.disabled = true;
+            abrirModalConfirma(data.id, nome);
           } else {
             aviso.textContent = "✔️ Nome disponível para cadastro.";
             aviso.style.color = "#080";
-            botaoSalvar.disabled = false;
           }
         })
         .catch(() => {
           aviso.textContent = "⚠️ Erro ao verificar nome.";
           aviso.style.color = "#900";
-          botaoSalvar.disabled = false;
         });
     }
   </script>
@@ -173,7 +154,7 @@
         </select>
 
         <textarea name="anotacoes" placeholder="Anotações sobre o alvo" rows="4"></textarea>
-        <input type="text" name="octopus" placeholder="endereço ">
+        <input type="text" name="octopus" placeholder="Endereço">
         <input type="file" name="foto" accept="image/*">
 
         <button type="submit">Salvar</button>
@@ -186,5 +167,55 @@
   </div>
 
   <h3 style="text-align:center">Total de alvos cadastrados: {{ total }}</h3>
+
+  <!-- 🔍 Modal de confirmação quando nome já existe -->
+  <div id="modal-confirma" style="
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999;
+  ">
+    <div style="
+      background: #fff; padding: 24px; border-radius: 12px;
+      width: 95%; max-width: 420px; text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    ">
+      <h3 style="margin-top:0;">Pessoa já cadastrada</h3>
+      <p style="margin: 8px 0 20px;">pessoa já cadastrada, deseja atualizar os dados?</p>
+
+      <div style="display:flex; gap:12px; justify-content:center;">
+        <button id="btn-confirma-sim" style="padding:10px 16px; border:none; border-radius:8px; background:#0e93ec; color:#fff; font-weight:bold; cursor:pointer;">
+          sim
+        </button>
+        <button id="btn-confirma-nao" style="padding:10px 16px; border:none; border-radius:8px; background:#ccc; color:#000; font-weight:bold; cursor:pointer;">
+          não
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts para controle do modal -->
+  <script>
+    let idExistente = null;
+
+    function abrirModalConfirma(id, nome) {
+      idExistente = id;
+      document.getElementById('modal-confirma').style.display = 'flex';
+    }
+
+    function fecharModalConfirma() {
+      document.getElementById('modal-confirma').style.display = 'none';
+      idExistente = null;
+    }
+
+    document.getElementById('btn-confirma-sim').addEventListener('click', function () {
+      if (!idExistente) return;
+      window.location.href = `/pesquisar_alvo?id=${encodeURIComponent(idExistente)}&open_modal=1`;
+    });
+
+    document.getElementById('btn-confirma-nao').addEventListener('click', function () {
+      fecharModalConfirma();
+    });
+  </script>
 </body>
 </html>

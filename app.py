@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import hashlib, os, unicodedata, socket
@@ -79,6 +79,7 @@ def menu_principal():
     is_admin = session.get('is_admin', False)
     total = Pessoa.query.count()  # 👈 Adiciona a contagem de alvos
     return render_template('menu.html', is_admin=is_admin, total=total)
+
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
@@ -101,6 +102,7 @@ def cadastro():
         return render_template('login.html', sucesso='✅ Cadastro realizado com sucesso! Espere a liberação do administrador.')
     
     return render_template('cadastro.html')
+
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
     if 'usuario_logado' not in session:
@@ -186,7 +188,6 @@ def pesquisar_alvo():
     mensagem=mensagem,
     now=now  # 👈 envia a data atual para o template
 )
-
 @app.route('/editar_alvo', methods=['POST'])
 def editar_alvo():
     if 'usuario_logado' not in session:
@@ -197,6 +198,7 @@ def editar_alvo():
     if not alvo:
         return '❌ Alvo não encontrado.'
 
+    # Atualiza os dados do formulário
     alvo.nome = limpar_texto(request.form['nome'])
     alvo.vulgo = limpar_texto(request.form['vulgo'])
     alvo.genitora = limpar_texto(request.form['genitora'])
@@ -205,20 +207,13 @@ def editar_alvo():
     alvo.anotacoes = request.form['anotacoes']
     alvo.octopus = limpar_texto(request.form['octopus'])
 
-    db.session.commit()
-    return redirect(url_for('pesquisar_alvo', id=id_alvo))
-
-@app.route('/atualizar_foto', methods=['POST'])
-def atualizar_foto():
-    if 'usuario_logado' not in session:
-        return redirect(url_for('login'))
-
-    id_alvo = request.form['id']
-    nova_foto = request.files['nova_foto']
+    # Atualiza a foto se enviada
+    nova_foto = request.files.get('nova_foto')
     if nova_foto and nova_foto.filename:
         foto_url = upload_image_to_cloudinary(nova_foto)
-        Pessoa.query.filter_by(id=id_alvo).update({'foto': foto_url})
-        db.session.commit()
+        alvo.foto = foto_url  # Atualiza direto no objeto
+
+    db.session.commit()
     return redirect(url_for('pesquisar_alvo', id=id_alvo))
 
 @app.route('/excluir_alvo', methods=['POST'])
@@ -277,6 +272,14 @@ def logout():
 def verificar_nome():
     nome = limpar_texto(request.args.get('nome', ''))
     existe = Pessoa.query.filter_by(nome=nome).first()
+
+    # Resposta JSON opcional, preservando o comportamento antigo
+    if request.args.get('fmt') == 'json':
+        return jsonify({
+            "status": "existente" if existe else "disponivel",
+            "id": existe.id if existe else None
+        })
+
     return "existente" if existe else "disponivel"
 
 def mostrar_ip_local():

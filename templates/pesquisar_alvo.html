@@ -189,7 +189,15 @@
     <div class="form-container">
 
       <h2>Pesquisar Alvo</h2>
-
+      {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <p style="text-align:center; font-weight:bold; color:#3c763d; background-color:#dff0d8; padding:10px; border-radius:8px; border:1px solid #c9e2b3; margin: 10px 0;">
+        {{ msg }}
+      </p>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
       <form method="POST" style="margin-bottom: 15px;">
         <input type="text" name="termo" placeholder="nome ou vulgo" value="{{ termo }}" required>
         <input type="text" name="bairro" placeholder="bairro (opcional)" value="{{ bairro }}">
@@ -200,14 +208,12 @@
         <button type="submit">🏠 voltar ao menu</button>
       </form>
 
-      <!-- ✅ MENSAGEM DE SEM RESULTADOS -->
       {% if mensagem %}
         <p style="text-align:center; font-weight:bold; color:#a94442; background-color:#f2dede; padding:10px; border-radius:8px;">
           {{ mensagem }}
         </p>
       {% endif %}
 
-      <!-- ✅ RESULTADOS -->
       {% if resultados %}
         <div class="resultado">
           <h3>Resultados:</h3>
@@ -220,14 +226,12 @@
         </div>
       {% endif %}
 
-      <!-- ✅ ALVO SELECIONADO -->
       {% if alvo %}
         <div class="alvo-info">
           <h3>Alvo Selecionado</h3>
           <div class="alvo-info-flex">
             {% if alvo.foto %}
               <img src="{{ alvo.foto if alvo.foto.startswith('http') else url_for('static', filename='IMAGEM/' + alvo.foto) }}" alt="Foto do alvo">
-
             {% endif %}
 
             <div class="alvo-dados">
@@ -259,36 +263,45 @@
     </div>
   </div>
 
-  <!-- 🪟 MODAL DE EDIÇÃO FLUTUANTE -->
-  <div id="modal-edicao" class="modal-overlay">
-    <div class="modal-box">
-      <button type="button" class="close-button" onclick="fecharModal()">❌ fechar</button>
-      <h3>Editar Dados do Alvo</h3>
+  <!-- 🪟 MODAL DE EDIÇÃO FLUTUANTE UNIFICADO -->
+<div id="modal-edicao" class="modal-overlay">
+  <div class="modal-box">
+    <button type="button" class="close-button" onclick="fecharModal()">❌ fechar</button>
+    <h3>Editar Dados do Alvo</h3>
 
-      <form method="POST" action="/editar_alvo">
-        <input type="hidden" name="id" value="{{ alvo.id }}">
-        <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
-        <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
-        <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
-         <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
-        <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
-        <textarea name="anotacoes" rows="10" placeholder="anotações">
-[{{ now }}] 
+    {% if alvo.foto %}
+    <div style="text-align:center; margin-bottom:20px;">
+      <img src="{{ alvo.foto if alvo.foto.startswith('http') else url_for('static', filename='IMAGEM/' + alvo.foto) }}"
+           alt="Foto atual"
+           style="max-width:180px; max-height:250px; border-radius:10px; border:2px solid #0e93ec;">
+      <p style="margin-top:8px; font-weight:bold;">Foto atual</p>
+    </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" action="/editar_alvo">
+      <input type="hidden" name="id" value="{{ alvo.id }}">
+      <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
+      <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
+      <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
+      <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
+      <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
+      <textarea name="anotacoes" rows="10" placeholder="anotações">[{{ now }}] 
 ⤵️ Digite abaixo a nova anotação...
 
-{{ alvo.anotacoes }}
-</textarea>
-        <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
-        <button type="submit">💾 salvar alterações</button>
-      </form>
-
-      <form method="POST" enctype="multipart/form-data" action="/atualizar_foto">
-        <input type="hidden" name="id" value="{{ alvo.id }}">
-        <input type="file" name="nova_foto" accept="image/*" required>
-        <button type="submit">🖼️ atualizar foto</button>
-      </form>
-    </div>
+{{ alvo.anotacoes }}</textarea>
+      <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
+      <input type="file" name="nova_foto" accept="image/*">
+      <button type="submit">💾 salvar alterações</button>
+    </form>
   </div>
+</div>
 
+{% if alvo and request.args.get('open_modal') %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    abrirModal();
+  });
+</script>
+{% endif %}
 </body>
 </html>
