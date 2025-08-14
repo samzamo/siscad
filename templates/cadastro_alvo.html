@@ -141,6 +141,17 @@
 
         <input type="text" name="vulgo" placeholder="Vulgo">
         <input type="text" name="genitora" placeholder="Genitora">
+       <!-- ✅ Novo campo Facção -->
+<select name="faccao" required>
+  <option value="">Selecione a facção</option>
+  <option value="CV">CV</option>
+  <option value="PCC">PCC</option>
+  <option value="GDE">GDE</option>
+  <option value="MASSA">MASSA</option>
+  <option value="TCP">TCP</option>
+  <option value="ADA">ADA</option>
+  <option value="SEM">SEM</option>
+</select>
 
         <select name="municipio" id="municipio" onchange="atualizarBairros()" required>
           <option value="">Selecione o município</option>
@@ -155,6 +166,11 @@
 
         <textarea name="anotacoes" placeholder="Anotações sobre o alvo" rows="4"></textarea>
         <input type="text" name="octopus" placeholder="Endereço">
+        <select name="octopusasint" required> # octopus sim ou não
+  <option value="NAO">NAO</option>
+  <option value="SIM">SIM</option>
+  
+</select>
         <input type="file" name="foto" accept="image/*">
 
         <button type="submit">Salvar</button>

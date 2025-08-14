@@ -259,10 +259,21 @@
               <p><strong>Nome:</strong> {{ alvo.nome }}</p>
               <p><strong>Vulgo:</strong> {{ alvo.vulgo }}</p>
               <p><strong>Genitora:</strong> {{ alvo.genitora }}</p>
+              <p><strong>Facção:</strong> {{ alvo.faccao }}</p>
               <p><strong>Município:</strong> {{ alvo.municipio }}</p>
               <p><strong>Bairro:</strong> {{ alvo.bairro }}</p>
-              <p><strong>Octopus:</strong> {{ alvo.octopus }}</p>
-
+              <p><strong>Endereço:</strong> {{ alvo.octopus }}</p>
+  {% if alvo.octopusasint == "SIM" %} 
+  <p style="color: green; font-weight: bold;">
+    🦉 <strong>Octopus Asint:</strong> SIM
+  </p>
+{% elif alvo.octopusasint == "NAO" %}
+  <p style="color: red; font-weight: bold;">
+    ❌ <strong>Octopus Asint:</strong> NAO
+  </p>
+{% else %}
+  <p><strong>Octopus Asint:</strong> {{ alvo.octopusasint }}</p>
+{% endif %}
               <button type="button" onclick="abrirModal()">✏️ Alterar dados</button>
 
               {% if is_admin %}
@@ -304,6 +315,16 @@
       <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
       <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
       <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
+      <select name="faccao" required>
+  <option value="">Selecione a facção</option>
+  <option value="CV" {% if alvo.faccao == "CV" %}selected{% endif %}>CV</option>
+  <option value="PCC" {% if alvo.faccao == "PCC" %}selected{% endif %}>PCC</option>
+  <option value="GDE" {% if alvo.faccao == "GDE" %}selected{% endif %}>GDE</option>
+  <option value="MASSA" {% if alvo.faccao == "MASSA" %}selected{% endif %}>MASSA</option>
+  <option value="TCP" {% if alvo.faccao == "TCP" %}selected{% endif %}>TCP</option>
+  <option value="ADA" {% if alvo.faccao == "ADA" %}selected{% endif %}>ADA</option>
+  <option value="SEM" {% if alvo.faccao == "SEM" %}selected{% endif %}>SEM</option>
+</select>
       <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
       <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
       <textarea name="anotacoes" rows="10" placeholder="anotações">[{{ now }}] 
@@ -311,6 +332,11 @@
 
 {{ alvo.anotacoes }}</textarea>
       <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
+      <select name="octopusasint" required> # octopus sim ou não
+  <option value="NAO" {% if alvo.octopusasint == "Não" %}selected{% endif %}>NAO</option>
+  <option value="SIM" {% if alvo.octopusasint == "Sim" %}selected{% endif %}>SIM</option>
+  
+</select>
       <input type="file" name="nova_foto" accept="image/*">
       <button type="submit">💾 salvar alterações</button>
     </form>

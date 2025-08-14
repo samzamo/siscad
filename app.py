@@ -1,11 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from datetime import datetime
 import hashlib, os, unicodedata, socket
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-from flask import flash
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_segura_123'
@@ -17,7 +17,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = (
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"pool_pre_ping": True}
+
+# ✅ Inicializa o banco e as migrações
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # 🌥️ Configuração do Cloudinary
 cloudinary.config( 
@@ -41,7 +44,7 @@ class Usuario(db.Model):
     password = db.Column(db.String(255), nullable=False)
     ativo = db.Column(db.Boolean, default=False)
     tipo = db.Column(db.String(10), default='normal')
-
+    cadastros = db.relationship('Cadastro', backref='usuario', lazy=True)
 class Pessoa(db.Model):
     __tablename__ = 'pessoa'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -53,6 +56,13 @@ class Pessoa(db.Model):
     anotacoes = db.Column(db.Text)
     foto = db.Column(db.String)  # Agora armazena a URL da imagem no Cloudinary
     octopus = db.Column(db.String)
+    faccao = db.Column(db.String(100), nullable=True)
+    octopusasint = db.Column(db.String(3))  # ✅ Novo campo: "Sim" ou "Não"
+
+class Cadastro(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    descricao = db.Column(db.String(255))  # ou qualquer outro campo
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -80,6 +90,68 @@ def menu_principal():
     is_admin = session.get('is_admin', False)
     total = Pessoa.query.count()  # 👈 Adiciona a contagem de alvos
     return render_template('menu.html', is_admin=is_admin, total=total)
+
+@app.route('/estatisticas')
+def estatisticas():
+    if not session.get('is_admin'):
+        return '⚠️ Acesso negado.'
+
+    total = Pessoa.query.count()
+    com_sim = Pessoa.query.filter(Pessoa.octopusasint.ilike('sim')).count()
+    porcentagem = round((com_sim / total) * 100, 2) if total > 0 else 0
+
+    return render_template(
+        'estatisticas.html',
+        total=total,
+        com_sim=com_sim,
+        porcentagem=porcentagem
+    )
+
+@app.route('/visualizar_todos', methods=['GET', 'POST'])
+def visualizar_todos():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    filtro = request.form.get('filtro_octopusasint')
+
+    query = Pessoa.query.with_entities(
+        Pessoa.id,  # Adicionado!
+        Pessoa.nome,
+        Pessoa.vulgo,
+        Pessoa.genitora,
+        Pessoa.faccao,
+        Pessoa.octopusasint
+    )
+
+    if filtro == 'SIM':
+        query = query.filter(Pessoa.octopusasint.ilike('SIM'))
+    elif filtro == 'NAO':
+        query = query.filter(Pessoa.octopusasint.ilike('NAO'))
+    elif filtro == 'None':
+        query = query.filter(Pessoa.octopusasint.is_(None))
+
+    dados = query.all()
+
+    return render_template('visualizar_todos.html', dados=dados, filtro=filtro)
+
+@app.route('/atualizar_octopusasint', methods=['POST'])
+def atualizar_octopusasint():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    id = request.form.get('id')
+    novo_valor = request.form.get('novo_valor')
+
+    pessoa = Pessoa.query.get(id)
+    if pessoa:
+        pessoa.octopusasint = novo_valor
+        db.session.commit()
+        flash('✅ Valor atualizado com sucesso!', 'sucesso')
+    else:
+        flash('❌ Pessoa não encontrada.', 'erro')
+
+    return redirect(url_for('visualizar_todos'))
+
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -113,10 +185,12 @@ def cadastro_alvo():
         nome = limpar_texto(request.form['nome'])
         vulgo = limpar_texto(request.form['vulgo'])
         genitora = limpar_texto(request.form['genitora'])
+        faccao = limpar_texto(request.form['faccao'])  # ✅ Novo campo
         bairro = limpar_texto(request.form['bairro'])
         municipio = limpar_texto(request.form['municipio'])
         anotacoes = request.form['anotacoes']
         octopus = limpar_texto(request.form['octopus'])
+        octopusasint = limpar_texto(request.form['octopusasint'])  # ✅ Novo campo
         foto = request.files['foto']
         foto_url = ''
 
@@ -135,11 +209,12 @@ def cadastro_alvo():
             )
 
         nova_pessoa = Pessoa(
-            nome=nome, vulgo=vulgo, foto=foto_url,
-            genitora=genitora, bairro=bairro,
-            anotacoes=anotacoes, octopus=octopus,
-            municipio=municipio
-        )
+    nome=nome, vulgo=vulgo, foto=foto_url,
+    genitora=genitora, faccao=faccao,  # ✅ Aqui
+    bairro=bairro, municipio=municipio,
+    anotacoes=anotacoes, octopus=octopus,
+    octopusasint=octopusasint  # ✅ Aqui
+)
         db.session.add(nova_pessoa)
         db.session.commit()
         total = Pessoa.query.count()
@@ -203,11 +278,13 @@ def editar_alvo():
     alvo.nome = limpar_texto(request.form['nome'])
     alvo.vulgo = limpar_texto(request.form['vulgo'])
     alvo.genitora = limpar_texto(request.form['genitora'])
+    alvo.faccao = limpar_texto(request.form['faccao'])  # ✅ Atualização
     alvo.bairro = limpar_texto(request.form['bairro'])
     alvo.municipio = limpar_texto(request.form['municipio'])
     alvo.anotacoes = request.form['anotacoes']
     alvo.octopus = limpar_texto(request.form['octopus'])
-
+    alvo.octopusasint = limpar_texto(request.form['octopusasint'])  # ✅ Atualização
+    
     # Atualiza a foto se enviada
     nova_foto = request.files.get('nova_foto')
     if nova_foto and nova_foto.filename:

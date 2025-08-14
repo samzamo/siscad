@@ -2,59 +2,145 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Dados Cadastrados</title>
+  <title>Lista de Alvos</title>
   <style>
     body {
       background-color: #f7fff1;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 30px;
+      padding: 30px;
     }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+
     table {
       margin: auto;
       border-collapse: collapse;
       width: 90%;
+      background-color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
     th, td {
-      padding: 10px;
-      border: 1px solid #aaa;
+      padding: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
     }
-    img {
-      max-width: 80px;
-      max-height: 80px;
-      border-radius: 4px;
+
+    th {
+      background-color: #e0f7d4;
+      color: #333;
+    }
+
+    button {
+      margin-top: 5px;
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #0e73e7;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
+    }
+
+    button:hover {
+      background-color: #8cc94b;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .top-bar h2 {
+      margin: 0 auto;
+      flex-grow: 1;
+      text-align: center;
+    }
+
+    .quantidade {
+      font-size: 0.8em;
+      color: #666;
+      margin-left: 10px;
     }
   </style>
 </head>
 <body>
-  <h2>Alvos Cadastrados</h2>
-  <table>
-    <tr>
-      <th>ID</th>
-      <th>Nome</th>
-      <th>Vulgo</th>
-      <th>Genitora</th>
-      <th>Foto</th>
-    </tr>
-    {% for pessoa in dados %}
-    <tr>
-      <td>{{ pessoa[0] }}</td>
-      <td>{{ pessoa[1] }}</td>
-      <td>{{ pessoa[2] }}</td>
-      <td>{{ pessoa[4] }}</td>
-      <td>
-        {% if pessoa[3] %}
-          <img src="{{ url_for('static', filename='IMAGEM/' + pessoa[3]) }}">
-        {% else %}
-          (sem foto)
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
-  <br>
-  <form action="/menu">
-    <button>voltar ao menu</button>
+
+  <!-- Botão + Título + Quantidade -->
+  <div class="top-bar">
+    <a href="{{ url_for('menu_principal') }}" style="padding: 10px 20px; background-color: #34b1eb; color: white; text-decoration: none; border-radius: 5px;">⬅ Voltar ao menu</a>
+    <h2>
+      Lista de Alvos
+      <span class="quantidade">({{ dados|length }} encontrados)</span>
+    </h2>
+    <div style="width: 150px;"></div>
+  </div>
+
+  <!-- Filtro por Octopusasint -->
+  <form method="POST" style="margin-bottom: 20px;">
+    <label for="filtro_octopusasint"><strong>Filtrar por Octopusasint:</strong></label>
+    <select name="filtro_octopusasint" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      <option value="None" {% if filtro == 'None' %}selected{% endif %}>Sem valor</option>
+      <option value="SIM" {% if filtro == 'SIM' %}selected{% endif %}>SIM</option>
+      <option value="NAO" {% if filtro == 'NAO' %}selected{% endif %}>NAO</option>
+    </select>
   </form>
+
+  <!-- Campo de busca por nome -->
+  <input type="text" id="filtroNome" placeholder="Filtrar por nome..." style="margin-bottom: 20px; padding: 8px; width: 300px;">
+
+  <!-- Tabela -->
+  <table>
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Vulgo</th>
+        <th>Genitora</th>
+        <th>Facção</th>
+        <th>Octopusasint</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pessoa in dados %}
+      <tr>
+        <td>{{ pessoa[1] }}</td>
+        <td>{{ pessoa[2] }}</td>
+        <td>{{ pessoa[3] }}</td>
+        <td>{{ pessoa[4] }}</td>
+        <td>
+          <form method="POST" action="{{ url_for('atualizar_octopusasint') }}">
+            <input type="hidden" name="id" value="{{ pessoa[0] }}">
+            <select name="novo_valor">
+              <option value="" {% if not pessoa[5] %}selected{% endif %}>-- Selecione --</option>
+              <option value="SIM" {% if pessoa[5] == 'SIM' %}selected{% endif %}>SIM</option>
+              <option value="NAO" {% if pessoa[5] == 'NAO' %}selected{% endif %}>NAO</option>
+            </select>
+            <button type="submit">Atualizar</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Script do filtro por nome -->
+  <script>
+    document.getElementById('filtroNome').addEventListener('input', function () {
+      const termo = this.value.toLowerCase();
+      const linhas = document.querySelectorAll('tbody tr');
+
+      linhas.forEach(linha => {
+        const nome = linha.querySelector('td').textContent.toLowerCase();
+        linha.style.display = nome.includes(termo) ? '' : 'none';
+      });
+    });
+  </script>
 </body>
 </html>

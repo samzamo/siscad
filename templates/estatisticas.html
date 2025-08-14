@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Estatísticas do Sistema</title>
+  <style>
+    body {
+      background-color: #f0f8ff;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .box {
+      background-color: #fff;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #aaa;
+      display: inline-block;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      color: #0070cc;
+    }
+
+    p {
+      font-size: 18px;
+      margin: 10px 0;
+    }
+
+    .voltar {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #0090ff;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+    }
+
+    .voltar:hover {
+      background-color: #0070cc;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>📊 Estatísticas do Sistema</h2>
+    <p>Total de alvos cadastrados: <strong>{{ total }}</strong></p>
+    <p>Cadastrados no octopus: <strong>{{ com_sim }}</strong></p>
+    <p>Porcentagem: <strong>{{ porcentagem }}%</strong></p>
+    <a href="/menu" class="voltar">⬅ Voltar ao Menu</a>
+  </div>
+</body>
+</html>
