@@ -333,6 +333,7 @@
 {{ alvo.anotacoes }}</textarea>
       <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
       <select name="octopusasint" required> # octopus sim ou não
+  <option value="" {% if alvo.octopusasint == "" %}selected{% endif %}>--octopus--</option>     
   <option value="NAO" {% if alvo.octopusasint == "Não" %}selected{% endif %}>NAO</option>
   <option value="SIM" {% if alvo.octopusasint == "Sim" %}selected{% endif %}>SIM</option>
   
