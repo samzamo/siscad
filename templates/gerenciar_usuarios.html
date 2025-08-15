@@ -57,6 +57,7 @@
 </head>
 <body>
     <h2>Usuários Ativos e Cadastrados</h2>
+    <a href="{{ url_for('menu_principal') }}" class="button">🏠 Voltar ao Menu</a>
     <table>
         <tr>
             <th>ID</th>
@@ -104,7 +105,7 @@
         {% endfor %}
     </table>
 
-    <a href="{{ url_for('menu_principal') }}" class="button">🏠 Voltar ao Menu</a>
+    
 
     <h2>Usuários Pendentes de Aprovação</h2>
     <table>

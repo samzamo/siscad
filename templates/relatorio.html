@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Relatório de Cadastros</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 40px;
+    }
+    h1 {
+      font-size: 26px;
+      margin-bottom: 30px;
+    }
+    table {
+      margin: 0 auto;
+      border-collapse: collapse;
+      width: 60%;
+    }
+    th {
+      background-color: #005baa;
+      color: white;
+      padding: 12px;
+      font-size: 16px;
+    }
+    td {
+      border: 1px solid #000;
+      padding: 10px;
+      font-size: 15px;
+    }
+
+    .btn-voltar {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .btn-voltar:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <h1>RELATÓRIO DE CADASTROS</h1>
+  <a href="{{ url_for('menu_principal') }}" class="btn-voltar">⬅️ Voltar ao Menu</a>
+  <table>
+    <tr>
+      <th>POSIÇÃO</th>
+      <th>USUÁRIOS</th>
+      <th>QUANTIDADE</th>
+    </tr>
+    {% for usuario, quantidade in relatorio %}
+    <tr>
+      <td>
+        {% if loop.index == 1 %}
+          🥇
+        {% elif loop.index == 2 %}
+          🥈
+        {% elif loop.index == 3 %}
+          🥉
+        {% else %}
+          {{ loop.index }}
+        {% endif %}
+      </td>
+      <td>{{ usuario }}</td>
+      <td>{{ quantidade }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

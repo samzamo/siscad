@@ -44,7 +44,8 @@ class Usuario(db.Model):
     password = db.Column(db.String(255), nullable=False)
     ativo = db.Column(db.Boolean, default=False)
     tipo = db.Column(db.String(10), default='normal')
-    cadastros = db.relationship('Cadastro', backref='usuario', lazy=True)
+    cadastros = db.relationship('Pessoa', backref='usuario', lazy=True)
+
 class Pessoa(db.Model):
     __tablename__ = 'pessoa'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -58,6 +59,7 @@ class Pessoa(db.Model):
     octopus = db.Column(db.String)
     faccao = db.Column(db.String(100), nullable=True)
     octopusasint = db.Column(db.String(3))  # ✅ Novo campo: "Sim" ou "Não"
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))  # 👈 novo campo
 
 class Cadastro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -152,6 +154,18 @@ def atualizar_octopusasint():
 
     return redirect(url_for('visualizar_todos'))
 
+@app.route('/relatorio')
+def relatorio():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    # Consulta: conta quantos alvos cada usuário cadastrou e ordena do maior para o menor
+    relatorio = db.session.query(
+        Usuario.username,
+        db.func.count(Pessoa.id).label('quantidade')
+    ).join(Pessoa).group_by(Usuario.username).order_by(db.func.count(Pessoa.id).desc()).all()
+
+    return render_template('relatorio.html', relatorio=relatorio)
 
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
@@ -207,13 +221,16 @@ def cadastro_alvo():
                 nome_existente=nome,
                 total=total
             )
+        # ✅ Busca o usuário logado
+        usuario = Usuario.query.filter_by(username=session['usuario_logado']).first()
 
         nova_pessoa = Pessoa(
     nome=nome, vulgo=vulgo, foto=foto_url,
     genitora=genitora, faccao=faccao,  # ✅ Aqui
     bairro=bairro, municipio=municipio,
     anotacoes=anotacoes, octopus=octopus,
-    octopusasint=octopusasint  # ✅ Aqui
+    octopusasint=octopusasint,  # ✅ Aqui
+    usuario_id=usuario.id # 👈 vincula ao usuário
 )
         db.session.add(nova_pessoa)
         db.session.commit()
