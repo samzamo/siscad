@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastros de {{ username }}</title>
+  <style>
+    body { font-family: Arial; margin: 40px; text-align: center; }
+    table { margin: auto; border-collapse: collapse; width: 80%; }
+    th, td { border: 1px solid #000; padding: 10px; }
+    th { background-color: #005baa; color: white; }
+    .btn-voltar {
+      position: fixed; top: 20px; left: 20px;
+      background-color: #3498db; color: white;
+      padding: 10px 20px; border-radius: 5px;
+      text-decoration: none; font-weight: bold;
+    }
+    .btn-voltar:hover { background-color: #2980b9; }
+  </style>
+</head>
+<body>
+  <h1>Cadastros de <strong>{{ username }}</strong></h1>
+  <a href="{{ url_for('relatorio') }}" class="btn-voltar">⬅️ Voltar ao Relatório</a>
+  <table>
+    <tr>
+      <th>ID</th>
+      <th>Nome</th>
+      <th>Vulgo</th>
+      <th>Genitora</th>
+      <th>Facção</th>
+      <th>Octopus Asint</th>
+    </tr>
+    {% for pessoa in cadastros %}
+    <tr>
+      <td>{{ pessoa.id }}</td>
+      <td>{{ pessoa.nome }}</td>
+      <td>{{ pessoa.vulgo }}</td>
+      <td>{{ pessoa.genitora }}</td>
+      <td>{{ pessoa.faccao }}</td>
+      <td>{{ pessoa.octopusasint }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

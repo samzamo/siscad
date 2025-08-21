@@ -77,8 +77,10 @@
   </style>
 </head>
 <body>
+  <div style="display: flex; justify-content: center; align-items: flex-start; gap: 40px; flex-wrap: wrap;">
+  <!-- Formulário de login -->
   <div class="container">
-    <h2>SISTEMA DE ACESSO</h2>
+    <h2>SISCAD - SISTEMA DE CADASTRO</h2>
 
     {% if sucesso %}
       <div class="mensagem-sucesso">{{ sucesso }}</div>
@@ -89,9 +91,16 @@
       <input type="password" name="password" placeholder="senha" required><br>
       <button type="submit">entrar</button>
     </form>
+
+    {% if erro %}
+      <div style="color: red; font-size: 14px; margin-top: 10px;">❌ {{ erro }}</div>
+    {% endif %}
+
     <form action="/cadastro">
       <button type="submit" style="background-color: #ccc; color: #000;">criar novo acesso</button>
     </form>
   </div>
+
+
 </body>
 </html>

@@ -315,41 +315,111 @@
       <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
       <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
       <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
+
       <select name="faccao" required>
-  <option value="">Selecione a facção</option>
-  <option value="CV" {% if alvo.faccao == "CV" %}selected{% endif %}>CV</option>
-  <option value="PCC" {% if alvo.faccao == "PCC" %}selected{% endif %}>PCC</option>
-  <option value="GDE" {% if alvo.faccao == "GDE" %}selected{% endif %}>GDE</option>
-  <option value="MASSA" {% if alvo.faccao == "MASSA" %}selected{% endif %}>MASSA</option>
-  <option value="TCP" {% if alvo.faccao == "TCP" %}selected{% endif %}>TCP</option>
-  <option value="ADA" {% if alvo.faccao == "ADA" %}selected{% endif %}>ADA</option>
-  <option value="SEM" {% if alvo.faccao == "SEM" %}selected{% endif %}>SEM</option>
-</select>
-      <input type="text" name="municipio" value="{{ alvo.municipio }}" placeholder="município">
-      <input type="text" name="bairro" value="{{ alvo.bairro }}" placeholder="bairro">
+        <option value="">Selecione a facção</option>
+        {% for fac in ["CV", "PCC", "GDE", "MASSA", "TCP", "ADA", "SEM"] %}
+        <option value="{{ fac }}" {% if alvo.faccao == fac %}selected{% endif %}>{{ fac }}</option>
+        {% endfor %}
+      </select>
+
+      <!-- Município e Bairro dinâmicos -->
+      <label for="municipio">Município:</label>
+      <select name="municipio" id="municipio" onchange="atualizarBairros()" required>
+        <option value="">Selecione</option>
+        <option value="FORTALEZA" {% if alvo.municipio == "FORTALEZA" %}selected{% endif %}>FORTALEZA</option>
+        <option value="CAUCAIA" {% if alvo.municipio == "CAUCAIA" %}selected{% endif %}>CAUCAIA</option>
+        <option value="MARACANAÚ" {% if alvo.municipio == "MARACANAÚ" %}selected{% endif %}>MARACANAÚ</option>
+      </select>
+
+      <label for="bairro">Bairro:</label>
+      <select name="bairro" id="bairro" required>
+        <option value="{{ alvo.bairro }}">{{ alvo.bairro }}</option>
+      </select>
+
       <textarea name="anotacoes" rows="10" placeholder="anotações">[{{ now }}] 
 ⤵️ Digite abaixo a nova anotação...
 
 {{ alvo.anotacoes }}</textarea>
-      <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="octopus">
-      <select name="octopusasint" required> # octopus sim ou não
-  <option value="" {% if alvo.octopusasint == "" %}selected{% endif %}>--octopus--</option>     
-  <option value="NAO" {% if alvo.octopusasint == "Não" %}selected{% endif %}>NAO</option>
-  <option value="SIM" {% if alvo.octopusasint == "Sim" %}selected{% endif %}>SIM</option>
-  
-</select>
+
+      <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="endereço">
+
+      <select name="octopusasint" required>
+        <option value="" {% if alvo.octopusasint == "" %}selected{% endif %}>--octopus--</option>     
+        <option value="NAO" {% if alvo.octopusasint == "Não" %}selected{% endif %}>NAO</option>
+        <option value="SIM" {% if alvo.octopusasint == "Sim" %}selected{% endif %}>SIM</option>
+      </select>
+
       <input type="file" name="nova_foto" accept="image/*">
       <button type="submit">💾 salvar alterações</button>
     </form>
   </div>
 </div>
 
+<!-- Script para abrir o modal automaticamente -->
 {% if alvo and request.args.get('open_modal') %}
 <script>
+  const abrirModalAutomaticamente = "{{ 'true' if alvo and request.args.get('open_modal') else 'false' }}";
+
   document.addEventListener('DOMContentLoaded', function () {
-    abrirModal();
+    if (abrirModalAutomaticamente === "true") {
+      abrirModal();
+      atualizarBairros();
+    }
   });
 </script>
 {% endif %}
+
+<!-- Script para atualizar bairros dinamicamente -->
+<script>
+  const bairrosPorMunicipio = {
+    "FORTALEZA": ["Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
+        "Amadeu Furtado", "Ancuri", "Antônio Bezerra", "Antônio Diogo", "Autran Nunes",
+        "Barra do Ceará", "Barroso", "Bela Vista", "Benfica", "Boa Vista", "Bom Futuro",
+        "Bom Jardim", "Bonsucesso", "Cachoeirinha", "Cais do Porto", "Cajazeiras", "Cambeba",
+        "Canindezinho", "Carlito Pamplona", "Centro", "Cidade 2000", "Cidade dos Funcionários",
+        "Coaçu", "Cocó", "Conjunto Ceará", "Conjunto Esperança", "Conjunto Palmeiras",
+        "Couto Fernandes", "Cristo Redentor", "Curió", "Damas", "De Lourdes", "Demócrito Rocha",
+        "Dendê", "Dias Macedo", "Dionísio Torres", "Dom Lustosa", "Edson Queiroz",
+        "Engenheiro Luciano Cavalcante", "Farias Brito", "Fátima", "Floresta", "Granja Lisboa",
+        "Granja Portugal", "Guajiru", "Henrique Jorge", "Itaoca", "Itaperi", "Jacarecanga",
+        "Jangurussu", "Jardim América", "Jardim Cearense", "Jardim das Oliveiras", "Jardim Guanabara",
+        "Jardim Iracema", "João XXIII", "Joaquim Távora", "Jóquei Clube", "José Bonifácio",
+        "José de Alencar", "Lagoa Redonda", "Manoel Dias Branco", "Manuel Sátiro", "Maraponga",
+        "Meireles", "Messejana", "Mondubim", "Monte Castelo", "Montese", "Moura Brasil",
+        "Mucuripe", "Novo Mondubim", "Olavo Oliveira", "Padre Andrade", "Pan Americano",
+        "Papicu", "Parangaba", "Parque Araxá", "Parque Dois Irmãos", "Parque Genibaú",
+        "Parque Iracema", "Parque Manibura", "Parque Presidente Vargas", "Parque Santa Maria",
+        "Parque Santa Rosa", "Parque São José", "Parquelândia", "Parreão", "Passaré",
+        "Patriolino Ribeiro", "Paupina", "Pedras", "Pici", "Pirambu", "Planalto Ayrton Senna",
+        "Praia de Iracema", "Prefeito José Walter", "Presidente Kennedy", "Quintino Cunha",
+        "Rodolfo Teófilo", "Sabiaguaba", "Salinas", "São Bento", "São Gerardo",
+        "São João do Tauape", "Sapiranga", "Serrinha", "Siqueira", "Varjota", "Vicente Pinzon",
+        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"],
+    "CAUCAIA": ["JUREMA", "TABAPUÁ", "PARQUE SOLEDADE"],
+    "MARACANAÚ": ["JARDIM JATOBÁ", "PAJUÇARA", "CENTRO"]
+  };
+
+  function atualizarBairros() {
+    const municipio = document.getElementById("municipio").value;
+    const bairroSelect = document.getElementById("bairro");
+    bairroSelect.innerHTML = "";
+
+    if (municipio && bairrosPorMunicipio[municipio]) {
+      bairrosPorMunicipio[municipio].forEach(bairro => {
+        const option = document.createElement("option");
+        option.value = bairro;
+        option.textContent = bairro;
+        bairroSelect.appendChild(option);
+      });
+    } else {
+      const option = document.createElement("option");
+      option.textContent = "Selecione um município primeiro";
+      bairroSelect.appendChild(option);
+    }
+  }
+</script>
+
+
 </body>
 </html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Últimos Cadastros</title>
+  <style>
+    body {
+      background-color: #f0f8ff;
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      text-align: center;
+    }
+    h2 {
+      font-size: 28px;
+      margin-bottom: 20px;
+      color: #0055aa;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input[type="number"] {
+      padding: 8px;
+      font-size: 16px;
+      width: 80px;
+      text-align: center;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      margin-left: 10px;
+      background-color: #0090ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0077cc;
+    }
+    table {
+      margin: auto;
+      border-collapse: collapse;
+      width: 95%;
+      max-width: 1000px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-size: 16px;
+    }
+    th {
+      background-color: #0055aa;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+    .botao-voltar {
+      margin-top: 30px;
+      padding: 10px 20px;
+      background-color: #ccc;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .botao-voltar:hover {
+      background-color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <h2>📋 Últimos Cadastros</h2>
+
+  <form method="POST">
+    <label for="dias">Mostrar últimos</label>
+    <input type="number" name="dias" id="dias" value="{{ dias }}" min="1">
+    <label>dias</label>
+    <button type="submit">Filtrar</button>
+  </form>
+
+  <p><strong>Total de cadastros encontrados:</strong> {{ total }}</p>
+
+  <table>
+    <tr>
+      <th>Usuário</th>
+      <th>Nome</th>
+      <th>Vulgo</th>
+      <th>Data</th>
+      <th>Ação</th>
+    </tr>
+    {% for pessoa in recentes %}
+    <tr>
+      <td>{{ pessoa.usuario.username }}</td>
+      <td>{{ pessoa.nome }}</td>
+      <td>{{ pessoa.vulgo }}</td>
+      <td>
+        {% if pessoa.data_criacao %}
+          {{ pessoa.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>
+        <form action="/pesquisar_alvo" method="GET">
+          <input type="hidden" name="id" value="{{ pessoa.id }}">
+          <button type="submit">🔍 Visualizar</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <form action="/menu">
+    <button type="submit" class="botao-voltar">⬅️ Voltar ao Menu</button>
+  </form>
+</body>
+</html>

@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from datetime import datetime
+from datetime import datetime, timedelta
 import hashlib, os, unicodedata, socket
 import cloudinary
 import cloudinary.uploader
@@ -60,6 +60,7 @@ class Pessoa(db.Model):
     faccao = db.Column(db.String(100), nullable=True)
     octopusasint = db.Column(db.String(3))  # ✅ Novo campo: "Sim" ou "Não"
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))  # 👈 novo campo
+    data_criacao = db.Column(db.DateTime, default=datetime.utcnow) # data da criação
 
 class Cadastro(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -167,10 +168,42 @@ def relatorio():
 
     return render_template('relatorio.html', relatorio=relatorio)
 
+@app.route('/ver_cadastros/<username>')
+def ver_cadastros_usuario(username):
+    if not session.get('is_admin'):
+        return '⚠️ Acesso negado.'
+
+    usuario = Usuario.query.filter_by(username=username).first()
+    if not usuario:
+        return f'❌ Usuário "{username}" não encontrado.'
+
+    cadastros = Pessoa.query.filter_by(usuario_id=usuario.id).all()
+    return render_template('cadastros_usuario.html', cadastros=cadastros, username=username)
+
+@app.route('/novos_cadastros', methods=['GET', 'POST'])
+def novos_cadastros():
+    if 'usuario_logado' not in session or not session.get('is_admin'):
+        return redirect(url_for('login'))
+
+    dias = 5  # valor padrão
+    if request.method == 'POST':
+        try:
+            dias = int(request.form.get('dias', 5))
+        except ValueError:
+            dias = 5
+
+    limite_data = datetime.utcnow() - timedelta(days=dias)
+
+    recentes = Pessoa.query.filter(Pessoa.data_criacao >= limite_data).order_by(Pessoa.data_criacao.desc()).all()
+    total = len(recentes)
+
+    return render_template('novos_cadastros.html', recentes=recentes, dias=dias, total=total)
+
+
 @app.route('/cadastro', methods=['GET', 'POST'])
 def cadastro():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip().replace(" ", "")
         senha = request.form['password']
         confirmar = request.form['confirmar']
 
@@ -189,6 +222,18 @@ def cadastro():
         return render_template('login.html', sucesso='✅ Cadastro realizado com sucesso! Espere a liberação do administrador.')
     
     return render_template('cadastro.html')
+@app.route('/verificar_usuario')
+def verificar_usuario():
+    nome = request.args.get('nome', '').strip().upper().replace(" ", "")
+    existe = Usuario.query.filter_by(username=nome).first()
+
+    if request.args.get('fmt') == 'json':
+        return jsonify({
+            "status": "existente" if existe else "disponivel",
+            "id": existe.id if existe else None
+        })
+
+    return "existente" if existe else "disponivel"
 
 @app.route('/cadastro_alvo', methods=['GET', 'POST'])
 def cadastro_alvo():
@@ -387,6 +432,7 @@ def mostrar_ip_local():
         print("⚠️ IP local não detectado:", e)
 
 if __name__ == '__main__':
-    print("🚀 Iniciando o sistema...")
+    print(f"\n🔗 Banco conectado: {app.config['SQLALCHEMY_DATABASE_URI']}\n")
     mostrar_ip_local()
     app.run(debug=True, host='0.0.0.0', port=5000)
+

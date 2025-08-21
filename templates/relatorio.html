@@ -56,6 +56,7 @@
       <th>POSIÇÃO</th>
       <th>USUÁRIOS</th>
       <th>QUANTIDADE</th>
+      <th>VER</th>
     </tr>
     {% for usuario, quantidade in relatorio %}
     <tr>
@@ -72,6 +73,11 @@
       </td>
       <td>{{ usuario }}</td>
       <td>{{ quantidade }}</td>
+      <td>
+        <a href="{{ url_for('ver_cadastros_usuario', username=usuario) }}" title="Ver cadastros">
+          👁️
+          </a>
+      </td>
     </tr>
     {% endfor %}
   </table>
