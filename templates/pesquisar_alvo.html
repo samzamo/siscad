@@ -5,6 +5,19 @@
   <title>Pesquisar Alvo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    .endereco-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.map-icon {
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
     * { box-sizing: border-box; }
 
     body {
@@ -262,7 +275,13 @@
               <p><strong>Facção:</strong> {{ alvo.faccao }}</p>
               <p><strong>Município:</strong> {{ alvo.municipio }}</p>
               <p><strong>Bairro:</strong> {{ alvo.bairro }}</p>
-              <p><strong>Endereço:</strong> {{ alvo.octopus }}</p>
+              <div class="endereco-container">
+  <strong>Endereço:</strong>
+  <span>{{ alvo.octopus }}</span>
+  <a href="https://www.google.com/maps/search/{{ alvo.octopus | urlencode }}" target="_blank">
+    <img src="/static/icon/pin.png" alt="Localizar no mapa" class="map-icon">
+  </a>
+</div>
   {% if alvo.octopusasint == "SIM" %} 
   <p style="color: green; font-weight: bold;">
     🦉 <strong>Octopus Asint:</strong> SIM

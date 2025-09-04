@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Busca Reversa por Anotação</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f0f8ff;
+    }
+    h2 {
+      font-size: 24px;
+      color: #0055aa;
+    }
+    textarea {
+      width: 100%;
+      font-size: 16px;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #0090ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0077cc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #0055aa;
+      color: white;
+    }
+    mark {
+      background-color: lightgreen;
+      font-weight: bold;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-box {
+      background-color: white;
+      padding: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 95vh;
+      overflow-y: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #333;
+    }
+
+    .modal-box img {
+      max-width: 150px;
+      border-radius: 10px;
+      border: 2px solid #0e93ec;
+      transition: all 0.3s ease;
+    }
+
+    .modal-box img.zoomed {
+      max-width: 400px;
+    }
+
+    #modal-anotacoes {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #f9f9f9;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🔍 Busca Reversa por Anotação</h2>
+
+  <form method="POST">
+    <textarea name="anotacao" rows="6" placeholder="Cole aqui a anotação completa..."></textarea>
+    <button type="submit">Buscar</button>
+  </form>
+
+  {% if termos_frequentes %}
+    <h3>🧠 Termos mais frequentes</h3>
+    <ul>
+      {% for termo, qtd in termos_frequentes %}
+        <li>{{ termo }} — {{ qtd }} ocorrências</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if sugestoes_vinculo %}
+    <h3>🔗 Sugestões de vínculo</h3>
+    <ul>
+      {% for sugestao in sugestoes_vinculo %}
+        <li>{{ sugestao }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if resultados %}
+    <h3>👥 Pessoas com trechos semelhantes</h3>
+    <table>
+      <tr>
+        <th>Nome</th>
+        <th>Vulgo</th>
+        <th>Similaridade</th>
+        <th>Anotação</th>
+        <th>Visualizar</th>
+      </tr>
+      {% for r in resultados %}
+        <tr>
+          <td>{{ r.pessoa.nome }}</td>
+          <td>{{ r.pessoa.vulgo }}</td>
+          <td>{{ r.score }}</td>
+          <td>{{ r.anotacao|safe }}</td>
+          <td>
+            <button class="btn-visualizar" data-id="{{ r.pessoa.id }}">👁️</button>
+          </td>
+        </tr>
+      {% endfor %}
+    </table>
+  {% else %}
+    <p>Nenhum vínculo encontrado.</p>
+  {% endif %}
+
+  <!-- 🪟 Modal de Visualização -->
+  <div id="modal-vinculo" class="modal-overlay">
+    <div class="modal-box">
+      <button onclick="fecharModal()">❌ fechar</button>
+      <div style="display:flex; gap:20px; margin-top:10px;">
+        <img id="foto-alvo" src="" alt="imagem" onclick="toggleZoom()" style="cursor: zoom-in;">
+        <div>
+          <p><strong>Nome:</strong> <span id="modal-nome"></span></p>
+          <p><strong>Vulgo:</strong> <span id="modal-vulgo"></span></p>
+          <p><strong>Genitora:</strong> <span id="modal-genitora"></span></p>
+          <p><strong>Facção:</strong> <span id="modal-faccao"></span></p>
+          <p><strong>Bairro:</strong> <span id="modal-bairro"></span></p>
+          <p><strong>Endereço:</strong> <span id="modal-endereco"></span></p>
+        </div>
+      </div>
+      <h4 style="margin-top:20px;">Anotação:</h4>
+      <div id="modal-anotacoes"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.btn-visualizar').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const id = this.dataset.id;
+          fetch(`/dados_alvo/${id}`)
+            .then(res => res.json())
+            .then(data => {
+              document.getElementById("foto-alvo").src = data.foto;
+              document.getElementById("modal-nome").textContent = data.nome;
+              document.getElementById("modal-vulgo").textContent = data.vulgo;
+              document.getElementById("modal-genitora").textContent = data.genitora;
+              document.getElementById("modal-faccao").textContent = data.faccao;
+              document.getElementById("modal-bairro").textContent = data.bairro;
+              document.getElementById("modal-endereco").textContent = data.endereco;
+              document.getElementById("modal-anotacoes").textContent = data.anotacoes;
+              document.getElementById("modal-vinculo").style.display = "flex";
+            });
+        });
+      });
+    });
+
+    function fecharModal() {
+      document.getElementById("modal-vinculo").style.display = "none";
+    }
+
+    function toggleZoom() {
+      const img = document.getElementById("foto-alvo");
+      img.classList.toggle("zoomed");
+      img.style.cursor = img.classList.contains("zoomed") ? "zoom-out" : "zoom-in";
+    }
+  </script>
+
+</body>
+<div style="position: absolute; top: 20px; left: 20px;">
+  <form action="/menu" method="get">
+    <button type="submit" style="
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #0055aa;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      position: fixed;
+    ">
+      ⬅️ Voltar ao Menu
+    </button>
+  </form>
+</div>
+
+</html>

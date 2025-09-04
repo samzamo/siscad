@@ -84,6 +84,7 @@
                     <input type="hidden" name="id" value="{{ usuario.id }}">
                     <select name="novo_tipo">
                         <option value="normal" {% if usuario.tipo == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="moderador" {% if usuario.tipo == 'moderador' %}selected{% endif %}>Moderador</option>
                         <option value="admin" {% if usuario.tipo == 'admin' %}selected{% endif %}>Admin</option>
                     </select>
                     <input type="submit" value="🔄 Alterar">

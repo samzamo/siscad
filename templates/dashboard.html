@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Criminal</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0faff;
+      padding: 40px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .topo {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .btn-voltar {
+      padding: 10px 20px;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .filtros {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .filtros label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+    }
+
+    .total-cadastros {
+      text-align: center;
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .grafico-card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="topo">
+    <h1>📊 Cadastros por Bairro e Facção</h1>
+    <a href="/menu" class="btn-voltar">← Voltar ao Menu</a>
+  </div>
+
+  <div class="filtros">
+    <label><input type="checkbox" value="CV" checked> CV</label>
+    <label><input type="checkbox" value="PCC" checked> PCC</label>
+    <label><input type="checkbox" value="GDE" checked> GDE</label>
+    <label><input type="checkbox" value="AQ" checked> AQ</label>
+    <label><input type="checkbox" value="ADA" checked> ADA</label>
+    <label><input type="checkbox" value="MASSA" checked> MASSA</label>
+    <label><input type="checkbox" value="SEM" checked> SEM</label>
+  </div>
+
+  <div class="total-cadastros" id="totalCadastros">
+    Total: 0 cadastros
+  </div>
+
+  <div class="grafico-card">
+    <canvas id="graficoFaccoesPorBairro"></canvas>
+  </div>
+
+  <script id="dados-json" type="application/json">
+    {{ dados | tojson | safe }}
+  </script>
+
+  <script>
+    const dados = JSON.parse(document.getElementById('dados-json').textContent);
+    const checkboxes = document.querySelectorAll('.filtros input[type="checkbox"]');
+    const chartCanvas = document.getElementById('graficoFaccoesPorBairro');
+    const totalDisplay = document.getElementById('totalCadastros');
+    let chart;
+
+    const faccaoColors = {
+      CV: '#ff4d4d',
+      PCC: '#4d94ff',
+      GDE: '#ffcc00',
+      AQ: '#66cc99',
+      ADA: '#9966ff',
+      MASSA: '#ff9900',
+      SEM: '#999999'
+    };
+
+    function atualizarGrafico() {
+      const selecionadas = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.value);
+
+      const bairros = dados.bairros;
+
+      // Soma total de cadastros das facções selecionadas
+      let totalCadastros = 0;
+      const somaPorBairro = bairros.map((_, idx) => {
+        return selecionadas.reduce((total, faccao) => {
+          const valor = dados.faccoes[faccao]?.[idx] || 0;
+          totalCadastros += valor;
+          return total + valor;
+        }, 0);
+      });
+
+      totalDisplay.textContent = selecionadas.length > 0
+        ? `Total: ${totalCadastros} cadastros (${selecionadas.join(' + ')})`
+        : `Nenhuma facção selecionada`;
+
+      const ordenado = bairros
+        .map((b, i) => ({ bairro: b, total: somaPorBairro[i] }))
+        .sort((a, b) => b.total - a.total);
+
+      const bairrosOrdenados = ordenado.map(obj => obj.bairro);
+
+      const datasets = selecionadas.map(faccao => ({
+        label: faccao,
+        data: bairrosOrdenados.map(b => {
+          const idx = dados.bairros.indexOf(b);
+          return dados.faccoes[faccao]?.[idx] || 0;
+        }),
+        backgroundColor: faccaoColors[faccao] || '#cccccc'
+      }));
+
+      if (chart) {
+        chart.data.labels = bairrosOrdenados;
+        chart.data.datasets = datasets;
+        chart.update();
+      } else {
+        chart = new Chart(chartCanvas, {
+          type: 'bar',
+          data: {
+            labels: bairrosOrdenados,
+            datasets: datasets
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: 'Cadastros por Bairro e Facção'
+              },
+              legend: {
+                position: 'top'
+              }
+            },
+            scales: {
+              x: { stacked: false },
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+
+      // Se não houver facções selecionadas, limpa o gráfico
+      if (selecionadas.length === 0 && chart) {
+        chart.data.labels = [];
+        chart.data.datasets = [];
+        chart.update();
+      }
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', atualizarGrafico));
+    atualizarGrafico();
+  </script>
+
+</body>
+</html>

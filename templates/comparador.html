@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Comparação de Fotos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #0b3d0b; /* verde escuro */
+      color: #fff;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .top-bar button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #resultado {
+      text-align: center;
+      margin: 20px auto;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      min-width: 300px;
+      max-width: 600px;
+    }
+
+    .vermelho {
+      background-color: #ffdddd;
+      color: #a10000;
+      border: 2px solid #a10000;
+    }
+
+    .amarelo {
+      background-color: #fff8cc;
+      color: #a68b00;
+      border: 2px solid #a68b00;
+    }
+
+    .verde {
+      background-color: #ddffdd;
+      color: #007a00;
+      border: 2px solid #007a00;
+    }
+
+    .container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 30px;
+    }
+
+    .preview-box {
+      width: 250px;
+      height: 250px;
+      border: 2px dashed #ccc;
+      border-radius: 8px;
+      background-color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .preview-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .upload-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    #comparar {
+      display: block;
+      margin: 0 auto;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #comparar:hover {
+      background-color: #0056b3;
+    }
+    progress::-webkit-progress-bar {
+  background-color: #eee;
+  border-radius: 10px;
+}
+
+progress::-webkit-progress-value {
+  background-color: #007bff;
+  border-radius: 10px;
+}
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <button onclick="window.location.href='/menu'">Voltar ao menu</button>
+  </div>
+
+  <h2>Comparação de Fotos</h2>
+  <div id="resultado"></div>
+  
+
+  <form id="formulario" enctype="multipart/form-data">
+    <div class="container">
+      <div>
+        <label class="upload-btn" for="foto1">Foto 1</label><br>
+        <input type="file" name="foto1" id="foto1" accept="image/*"><br>
+        <div class="preview-box"><img id="preview1" alt="Prévia 1"></div>
+      </div>
+      <div>
+        <label class="upload-btn" for="foto2">Foto 2</label><br>
+        <input type="file" name="foto2" id="foto2" accept="image/*"><br>
+        <div class="preview-box"><img id="preview2" alt="Prévia 2"></div>
+      </div>
+    </div>
+    <button type="submit" id="comparar">Comparar</button>
+  </form>
+
+  <script>
+    document.getElementById("foto1").onchange = (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById("preview1");
+      preview.src = file ? URL.createObjectURL(file) : "";
+    };
+
+    document.getElementById("foto2").onchange = (e) => {
+      const file = e.target.files[0];
+      const preview = document.getElementById("preview2");
+      preview.src = file ? URL.createObjectURL(file) : "";
+    };
+
+    document.getElementById("formulario").onsubmit = async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const resposta = await fetch("/comparar", {
+        method: "POST",
+        body: formData
+      });
+
+      try {
+        const dados = await resposta.json();
+        const resultado = document.getElementById("resultado");
+        resultado.className = "";
+
+        if (dados.porcentagem !== undefined) {
+          resultado.innerText = `Esta pessoa tem ${dados.porcentagem}% de chance de ser a mesma pessoa.`;
+
+          if (dados.porcentagem >= 90) {
+            resultado.classList.add("verde");
+          } else if (dados.porcentagem >= 70) {
+            resultado.classList.add("amarelo");
+          } else {
+            resultado.classList.add("vermelho");
+          }
+        } else {
+          resultado.innerText = dados.erro ? `Erro: ${dados.erro}` : "Erro ao processar a comparação.";
+          resultado.classList.add("vermelho");
+        }
+      } catch (err) {
+        document.getElementById("resultado").innerText = "Erro inesperado ao processar a resposta.";
+        document.getElementById("resultado").classList.add("vermelho");
+      }
+    };
+  </script>
+
+  
+
+</body>
+</html>

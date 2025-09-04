@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Pesquisa por Vínculo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      background-color: #f0f8ff;
+      overflow-y: auto;
+    }
+    h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+      color: #0055aa;
+    }
+    form {
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      padding: 8px;
+      margin-right: 10px;
+      font-size: 16px;
+      width: 200px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #0090ff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0077cc;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background-color: #0055aa;
+      color: white;
+    }
+
+    /* ✅ Modal adaptável */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+      z-index: 999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: auto;
+    }
+
+    .modal-box {
+      background-color: white;
+      padding: 20px;
+      width: 90%;
+      max-width: 800px;
+      max-height: 95vh;
+      overflow-y: auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #333;
+    }
+
+    .modal-box img {
+      max-width: 150px;
+      border-radius: 10px;
+      border: 2px solid #0e93ec;
+      transition: all 0.3s ease;
+    }
+
+.modal-box img.zoomed {
+  max-width: 400px; /* ✅ só a imagem aumenta */
+}
+    #modal-anotacoes {
+      white-space: pre-wrap;
+      border: 1px solid #ccc;
+      padding: 10px;
+      background: #f9f9f9;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    mark {
+      background-color: lightgreen;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <form action="/menu">
+    <button type="submit">⬅️ Voltar ao Menu</button>
+  </form>
+
+  <h2>🔍 Pesquisa por Vínculo</h2>
+
+  <form method="POST">
+    <input type="text" name="termo1" placeholder="termo 1">
+    <input type="text" name="termo2" placeholder="termo 2">
+    <input type="text" name="termo3" placeholder="termo 3">
+    <button type="submit">Pesquisar</button>
+  </form>
+<div id="loading" style="display:none; margin-top:20px; font-weight:bold; color:#0077cc;">
+  🔄 Pesquisando... aguarde
+</div>
+  {% if resultados %}
+  <table>
+    <tr>
+      <th>Qualificação</th>
+      <th>Termo</th>
+      <th>Visualização</th>
+    </tr>
+    {% for pessoa in resultados %}
+    <tr>
+      <td>{{ pessoa.nome }} || ({{ pessoa.vulgo }})</td>
+      <td>{{ termos|join(', ') }}</td>
+      <td>
+        <button type="button"
+                class="btn-visualizar"
+                data-id="{{ pessoa.id }}"
+                data-termos="{{ termos|join(',') }}">
+          👁️ Visualizar
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p>Nenhum resultado encontrado.</p>
+  {% endif %}
+
+  <!-- 🪟 Modal de Visualização -->
+  <div id="modal-vinculo" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+      <button onclick="fecharModal()">❌ fechar</button>
+      <div style="display:flex; gap:20px; margin-top:10px;">
+        <img id="foto-alvo" src="" alt="imagem" onclick="toggleZoom()" style="cursor: zoom-in;">
+        <div>
+          <p><strong>Nome:</strong> <span id="modal-nome"></span></p>
+          <p><strong>Vulgo:</strong> <span id="modal-vulgo"></span></p>
+          <p><strong>Genitora:</strong> <span id="modal-genitora"></span></p>
+          <p><strong>Facção:</strong> <span id="modal-faccao"></span></p>
+          <p><strong>Bairro:</strong> <span id="modal-bairro"></span></p>
+          <p><strong>Endereço:</strong> <span id="modal-endereco"></span></p>
+        </div>
+      </div>
+      <h4 style="margin-top:20px;">Anotação:</h4>
+      <div id="modal-anotacoes"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      document.querySelectorAll('.btn-visualizar').forEach(btn => {
+        btn.addEventListener('click', function () {
+          const id = this.dataset.id;
+          const termos = this.dataset.termos.split(',').map(t => t.trim());
+          abrirModal(id, termos);
+        });
+      });
+    });
+
+    function abrirModal(id, termos) {
+  fetch(`/dados_alvo/${id}`)
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("foto-alvo").src = data.foto;
+      document.getElementById("modal-nome").textContent = data.nome;
+      document.getElementById("modal-vulgo").textContent = data.vulgo;
+      document.getElementById("modal-genitora").textContent = data.genitora;
+      document.getElementById("modal-faccao").textContent = data.faccao;
+      document.getElementById("modal-bairro").textContent = data.bairro;
+      document.getElementById("modal-endereco").textContent = data.endereco;
+
+      let original = data.anotacoes;
+
+      // ✅ Função para normalizar texto no JS
+      function normalizarJS(texto) {
+        return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      }
+
+      // ✅ Destacar todos os termos no texto original
+      let partes = original.split(/(\s+)/); // preserva espaços e pontuação
+
+      let resultado = partes.map(palavra => {
+        const pNorm = normalizarJS(palavra);
+        const deveDestacar = termos.some(termo => pNorm.includes(normalizarJS(termo)));
+        return deveDestacar
+          ? `<mark style="background-color:lightgreen;">${palavra}</mark>`
+          : palavra;
+      }).join('');
+
+      document.getElementById("modal-anotacoes").innerHTML = resultado;
+      document.getElementById("modal-vinculo").style.display = "flex";
+    });
+}
+    
+
+    function fecharModal() {
+      document.getElementById("modal-vinculo").style.display = "none";
+    }
+
+function toggleZoom() {
+  const img = document.getElementById("foto-alvo");
+  const isZoomed = img.classList.contains("zoomed");
+
+  if (isZoomed) {
+    img.classList.remove("zoomed");
+    img.style.cursor = "zoom-in";
+  } else {
+    img.classList.add("zoomed");
+    img.style.cursor = "zoom-out";
+  }
+}
+
+    
+  </script>
+
+<script>
+  // Mostra o "Carregando..." ao enviar o formulário
+  document.querySelector('form[method="POST"]').addEventListener('submit', function () {
+    document.getElementById("loading").style.display = "block";
+  });
+
+  // Esconde o "Carregando..." quando a página terminar de carregar
+  window.addEventListener('load', function () {
+    document.getElementById("loading").style.display = "none";
+  });
+</script>
+</body>
+</html>

@@ -8,12 +8,30 @@
       background-color: #d0ffd6;
       font-family: Arial, sans-serif;
       text-align: center;
-      padding-top: 60px;
+      padding-top: 40px;
     }
+
     h2 {
       color: green;
       font-size: 22px;
+      margin-bottom: 20px;
     }
+
+    .sucesso-img {
+  width: 200px;
+  height: auto;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  background-color: transparent;
+}
+
+    .agradecimento {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 30px;
+    }
+
     button {
       padding: 10px 20px;
       background-color: #0090ff;
@@ -23,16 +41,19 @@
       font-size: 16px;
       cursor: pointer;
     }
+
     button:hover {
       background-color: #0070cc;
     }
   </style>
 </head>
 <body>
+  <img src="/static/icon/sucesso.png" alt="Sucesso" class="sucesso-img">
+
   <h2>{{ mensagem }}</h2>
+
   <form action="/menu">
     <button type="submit">voltar ao menu</button>
   </form>
 </body>
 </html>
-
