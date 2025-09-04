@@ -7,7 +7,7 @@ gunicorn==21.2.0
 
 # Análise de texto e similaridade
 scikit-learn==1.7.1
-numpy==1.26.4
+numpy
 pandas==2.3.2
 
 # Manipulação de imagens
