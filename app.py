@@ -175,6 +175,15 @@ class Cadastro(db.Model):
     descricao = db.Column(db.String(255))  # ou qualquer outro campo
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.id'))
 
+class Mandado(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String)
+    genitora = db.Column(db.String)
+    tipificacao = db.Column(db.String)
+    data = db.Column(db.String)
+    endereco = db.Column(db.String)
+
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
