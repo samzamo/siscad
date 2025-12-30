@@ -182,7 +182,7 @@ class Mandado(db.Model):
     tipificacao = db.Column(db.String)
     data = db.Column(db.String)
     endereco = db.Column(db.String)
-
+    status = db.Column(db.String(20), default='neutro')
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -221,6 +221,46 @@ def menu_principal():
         is_moderador=is_moderador,
         total=total
     )
+@app.route('/mandados', methods=['GET', 'POST'])
+def mandados():
+    if 'usuario_logado' not in session:
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        arquivo = request.files.get('arquivo')
+        if arquivo:
+            import pandas as pd
+            # Apaga registros antigos
+            Mandado.query.delete()
+            db.session.commit()
+
+            # Lê a planilha enviada
+            df = pd.read_excel(arquivo)
+
+            # Insere novos registros
+            for _, row in df.iterrows():
+                novo = Mandado(
+                    nome=row['nome'],
+                    genitora=row['genitora'],
+                    tipificacao=row['tipificacao'],
+                    data=row['data'],
+                    endereco=row['endereco']
+                )
+                db.session.add(novo)
+            db.session.commit()
+
+    # Busca todos os registros para exibir na tabela
+    dados = Mandado.query.all()
+    return render_template('mandados.html', dados=dados)
+
+
+
+
+@app.route('/renovar_mandados', methods=['POST'])
+def renovar_mandados():
+    arquivo = request.files['arquivo']
+    # lógica para processar o arquivo e atualizar os mandados
+    return redirect(url_for('mandados'))
 
 @app.route('/estatisticas')
 def estatisticas():
@@ -239,6 +279,28 @@ def estatisticas():
         com_sim=com_sim,
         porcentagem=porcentagem
     )
+
+@app.route('/mandados/atualizar_status', methods=['POST'])
+def atualizar_status():
+    data = request.get_json()
+    mandado_id = data.get('id')
+    status = data.get('status')
+
+    if status not in ['verde', 'vermelho', 'neutro']:
+        return jsonify({'ok': False, 'erro': 'Status inválido'}), 400
+
+    mandado = Mandado.query.get(mandado_id)
+    if not mandado:
+        return jsonify({'ok': False, 'erro': 'Mandado não encontrado'}), 404
+
+    mandado.status = status
+    db.session.commit()
+
+    return jsonify({'ok': True})
+
+
+
+
 # dashboard
 @app.route("/dashboard")
 def dashboard():

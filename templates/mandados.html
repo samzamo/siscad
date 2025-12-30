@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Mandados de Prisão AIS 06</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { margin-top: 20px; }
+        .titulo-caixa {
+            background-color: #0d6efd; color: #fff; text-align: center;
+            padding: 15px; border-radius: 8px; margin-bottom: 20px;
+            font-size: 24px; font-weight: bold;
+        }
+        .map-wrapper { width: 100%; height: 450px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 20px; }
+        .map-wrapper iframe { width: 100%; height: 100%; border: none; }
+        .filters { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+        #filtro-data { flex: 0.5; min-width: 120px; }
+        #filtro-tipificacao { flex: 1; min-width: 160px; }
+        #filtro-nome { flex: 2; min-width: 220px; }
+        table { font-size: 14px; }
+        .map-icon { margin-left: 6px; color: #007bff; }
+        .nome-verde { color: #198754; font-weight: 600; }
+        .nome-vermelho { color: #dc3545; font-weight: 600; }
+        .upload-form input[type="file"] { width: 140px; padding: 4px; font-size: 14px; }
+        .upload-form input[type="password"] { width: 120px; padding: 4px; font-size: 14px; }
+        .upload-form button { padding: 6px 12px; font-size: 14px; }
+        @media (max-width: 768px) {
+            .titulo-caixa { font-size: 20px; }
+            .map-wrapper { height: 300px; }
+            table { font-size: 12px; }
+            .filters { flex-direction: column; }
+            #filtro-data { width: 70%; }
+            #filtro-tipificacao, #filtro-nome { width: 100%; }
+            .upload-form { flex-direction: column; }
+            .upload-form input[type="file"], .upload-form input[type="password"] { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Título -->
+        <div class="titulo-caixa">Mandados de Prisão AIS 06</div>
+
+        <!-- Voltar -->
+        <div class="text-end mb-3">
+            <a href="{{ url_for('menu_principal') }}" class="btn btn-secondary">Voltar ao Menu</a>
+        </div>
+
+        <!-- Mapa -->
+        <div class="map-wrapper">
+            <iframe src="https://www.google.com/maps/d/u/0/embed?mid=12SABAYGoMvsxbf9YxTRqOQdmsZVJvdE&ehbc=2E312F&noprof=1" allowfullscreen loading="lazy"></iframe>
+        </div>
+
+        <!-- Filtros -->
+        <div class="filters">
+            <input id="filtro-data" type="date" class="form-control">
+            <select id="filtro-tipificacao" class="form-select">
+                <option value="">Todas as tipificações</option>
+                {% for tipo in dados | map(attribute='tipificacao') | unique %}
+                <option value="{{ tipo }}">{{ tipo }}</option>
+                {% endfor %}
+            </select>
+            <input id="filtro-nome" type="text" class="form-control" placeholder="Pesquisar por nome">
+        </div>
+
+        <!-- Tabela -->
+        <div class="table-responsive mb-4">
+            <table id="tabela" class="table table-bordered table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Genitora</th>
+                        <th>Tipificação</th>
+                        <th>Data Mandato</th>
+                        <th>Endereço</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dados %}
+                    {% set partes = item.data[:10].split('-') %}
+                    {% set classe_status = 'nome-verde' if item.status == 'verde'
+                                         else 'nome-vermelho' if item.status == 'vermelho'
+                                         else '' %}
+                    <tr data-id="{{ item.id }}" data-nome="{{ item.nome }}" data-tipificacao="{{ item.tipificacao }}" data-data="{{ item.data[:10] }}">
+                        <td class="nome-cell {{ classe_status }}">
+                            {% if item.status == 'verde' %}
+                                <span style="color:#198754;font-weight:bold;">✔</span>
+                            {% elif item.status == 'vermelho' %}
+                                <span style="color:#dc182c;font-weight:bold;">✖</span>
+                            {% endif %}
+                            {{ item.nome }}
+                        </td>
+                        <td>{{ item.genitora }}</td>
+                        <td>{{ item.tipificacao }}</td>
+                        <td>{{ partes[2] }}/{{ partes[1] }}/{{ partes[0] }}</td>
+                        <td>
+                            {{ item.endereco }}
+                            <a href="https://www.google.com/maps/search/{{ item.endereco | urlencode }}" target="_blank">
+                                <i class="fas fa-map-marker-alt map-icon"></i>
+                            </a>
+                        </td>
+                        <td>
+                            <select class="form-select form-select-sm escolha-status">
+                                <option value="">Selecione...</option>
+                                <option value="verde" {% if item.status == 'verde' %}selected{% endif %}>Sim</option>
+                                <option value="vermelho" {% if item.status == 'vermelho' %}selected{% endif %}>Não</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Upload -->
+        <div class="mt-4">
+            <h5>Renovar Mandados</h5>
+            <form class="upload-form d-flex gap-2 flex-wrap" method="POST" action="{{ url_for('mandados') }}" enctype="multipart/form-data" onsubmit="return validarSenha()">
+                <input type="password" id="senha" class="form-control" placeholder="Senha" required>
+                <input type="file" name="arquivo" class="form-control" required>
+                <button type="submit" class="btn btn-primary">Renovar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Filtros
+        function aplicarFiltros() {
+            const nomeFiltro = document.getElementById("filtro-nome").value.toLowerCase();
+            const tipFiltro = document.getElementById("filtro-tipificacao").value.toLowerCase();
+            const dataFiltro = document.getElementById("filtro-data").value;
+            const linhas = document.querySelectorAll("#tabela tbody tr");
+
+            linhas.forEach(linha => {
+                const nome = linha.dataset.nome.toLowerCase();
+                const tip = linha.dataset.tipificacao.toLowerCase();
+                const data = linha.dataset.data;
+                let visivel = (!nomeFiltro || nome.includes(nomeFiltro)) &&
+                              (!tipFiltro || tip === tipFiltro);
+                if (dataFiltro) visivel = visivel && (data >= dataFiltro);
+                linha.style.display = visivel ? "" : "none";
+            });
+        }
+
+        document.getElementById("filtro-nome").addEventListener("input", aplicarFiltros);
+        document.getElementById("filtro-tipificacao").addEventListener("change", aplicarFiltros);
+        document.getElementById("filtro-data").addEventListener("change", aplicarFiltros);
+
+        // Validação da senha
+        function validarSenha() {
+            const senha = document.getElementById("senha").value;
+            if (senha !== "mandado") {
+                alert("Senha incorreta. Tente novamente.");
+                return false;
+            }
+            return true;
+        }
+
+                // Atualização de status
+        document.addEventListener("change", async (e) => {
+            if (!e.target.classList.contains("escolha-status")) return;
+
+            const linha = e.target.closest("tr");
+            const id = parseInt(linha.dataset.id);
+            const status = e.target.value;
+
+            if (!status) return;
+
+            try {
+                const respHttp = await fetch("/mandados/atualizar_status", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id, status })
+                });
+                const resp = await respHttp.json().catch(() => ({}));
+
+                if (respHttp.ok && resp.ok) {
+                    const nomeCell = linha.querySelector(".nome-cell");
+                    nomeCell.classList.remove("nome-verde", "nome-vermelho");
+
+                    if (status === "verde") {
+                        nomeCell.classList.add("nome-verde");
+                        nomeCell.innerHTML = `<span style="color:#198754;font-weight:bold;">✔</span> ${linha.dataset.nome}`;
+                    } else if (status === "vermelho") {
+                        nomeCell.classList.add("nome-vermelho");
+                        nomeCell.innerHTML = `<span style="color:#dc3545;font-weight:bold;">✖</span> ${linha.dataset.nome}`;
+                    }
+                } else {
+                    alert((resp && resp.erro) || "Não foi possível atualizar o status.");
+                }
+            } catch {
+                alert("Erro de conexão ao atualizar o status.");
+            }
+        });
+    </script>
+</body>
+</html>
+
+        
