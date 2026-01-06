@@ -363,11 +363,14 @@
 
       <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="endereço">
 
-      <select name="octopusasint" required>
-        <option value="" {% if alvo.octopusasint == "" %}selected{% endif %}>--octopus--</option>     
-        <option value="NAO" {% if alvo.octopusasint == "Não" %}selected{% endif %}>NAO</option>
-        <option value="SIM" {% if alvo.octopusasint == "Sim" %}selected{% endif %}>SIM</option>
-      </select>
+      <label for="octopusasint">Octopus Asint:</label>
+<select name="octopusasint" required>
+    <option value="" {% if not alvo.octopusasint %}selected{% endif %}>--octopus--</option> 
+    
+    <option value="NAO" {% if alvo.octopusasint == "NAO" %}selected{% endif %}>NAO</option>
+    
+    <option value="SIM" {% if alvo.octopusasint == "SIM" %}selected{% endif %}>SIM</option>
+</select>
 
       <input type="file" name="nova_foto" accept="image/*">
       <button type="submit">💾 salvar alterações</button>
