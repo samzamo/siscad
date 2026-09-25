@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ alvo.nome }} · Relatório SISCAD</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --navy: #16324a;
+      --navy-dark: #0f2436;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
+      --success: #1f8a4c;
+      --danger-dark: #a5301f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      background-color: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      margin: 0;
+      padding: 24px 16px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .wrapper { display: flex; justify-content: center; }
+    .card {
+      width: 100%;
+      max-width: 820px;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 12px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .header {
+      background-color: var(--navy);
+      color: #fff;
+      padding: 20px 28px;
+      text-align: center;
+    }
+    .header .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9db3c4;
+      margin-bottom: 4px;
+    }
+    .header h1 { margin: 0; font-size: 19px; font-weight: 600; }
+    .body { padding: 26px 28px 30px; }
+
+    .topo-flex {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    .topo-flex img {
+      width: 190px;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .foto-vazia {
+      width: 190px;
+      height: 240px;
+      border-radius: 8px;
+      border: 1px dashed var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+
+    .dados { flex: 1; min-width: 260px; }
+
+    .dados-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 24px;
+    }
+    .dados-grid .full { grid-column: 1 / -1; }
+    .data-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .data-row .label { color: var(--text-muted); font-weight: 600; }
+    .data-row .value { text-align: right; }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-sim { background-color: #e4f5ea; color: var(--success); }
+    .status-nao { background-color: #fdecea; color: var(--danger-dark); }
+
+    .secao-titulo {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin: 22px 0 8px;
+    }
+    .anotacoes-box {
+      white-space: pre-wrap;
+      background-color: #f7f9fb;
+      padding: 14px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .rodape {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .acoes-exportar {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background-color: #f7f9fb;
+      border-bottom: 1px solid var(--border);
+    }
+    .btn-acao {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .btn-baixar { background-color: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-baixar:hover { background-color: #24506f; }
+    .btn-enviar { background-color: #eceff2; color: var(--navy); }
+    .btn-enviar:hover { background-color: #dfe4e9; }
+
+    @media print {
+      .acoes-exportar { display: none; }
+    }
+
+    @media print {
+      body { background-color: #fff; padding: 0; }
+      .card { box-shadow: none; border: none; max-width: 100%; }
+    }
+
+    @media screen and (max-width: 560px) {
+      .topo-flex { flex-direction: column; align-items: center; text-align: center; }
+      .dados-grid { grid-template-columns: 1fr; }
+      .data-row { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <span class="eyebrow">SISCAD · Relatório de Alvo</span>
+        <h1>Ficha Cadastral</h1>
+      </div>
+      <div class="acoes-exportar">
+        <a href="{{ url_for('exportar_alvo', id=alvo.id, baixar=1) }}" class="btn-acao btn-baixar">⬇ Baixar</a>
+        <button type="button" class="btn-acao btn-enviar" onclick="enviarRelatorio()">✉ Enviar</button>
+      </div>
+      <div class="body">
+        <div class="topo-flex">
+          {% if alvo.foto %}
+            <img src="{{ alvo.foto }}" alt="Foto do alvo">
+          {% else %}
+            <div class="foto-vazia">Sem foto</div>
+          {% endif %}
+
+          <div class="dados">
+            <div class="dados-grid">
+              <div class="data-row"><span class="label">Nome</span><span class="value">{{ alvo.nome or '—' }}</span></div>
+              <div class="data-row"><span class="label">Vulgo</span><span class="value">{{ alvo.vulgo or '—' }}</span></div>
+              <div class="data-row"><span class="label">Genitora</span><span class="value">{{ alvo.genitora or '—' }}</span></div>
+              <div class="data-row"><span class="label">Facção</span><span class="value">{{ alvo.faccao or '—' }}</span></div>
+              <div class="data-row"><span class="label">Município</span><span class="value">{{ alvo.municipio or '—' }}</span></div>
+              <div class="data-row"><span class="label">Bairro</span><span class="value">{{ alvo.bairro or '—' }}</span></div>
+              <div class="data-row full"><span class="label">Endereço</span><span class="value">{{ alvo.octopus or '—' }}</span></div>
+              <div class="data-row full">
+                <span class="label">Octopus Asint</span>
+                <span class="value">
+                  {% if alvo.octopusasint == "SIM" %}
+                    <span class="status-badge status-sim">SIM</span>
+                  {% elif alvo.octopusasint == "NAO" %}
+                    <span class="status-badge status-nao">NÃO</span>
+                  {% else %}
+                    {{ alvo.octopusasint or '—' }}
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="secao-titulo">Anotações</div>
+        <div class="anotacoes-box">{{ alvo.anotacoes or 'Sem anotações registradas.' }}</div>
+
+        <div class="rodape">
+          Relatório gerado pelo SISCAD em {{ gerado_em }} · ID do cadastro: {{ alvo.id }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='ficha-imagem.js') }}"></script>
+  <script>
+    const DADOS_ALVO = {
+      id: {{ alvo.id }},
+      nome: {{ alvo.nome | tojson }},
+      vulgo: {{ (alvo.vulgo or '') | tojson }},
+      genitora: {{ (alvo.genitora or '') | tojson }},
+      faccao: {{ (alvo.faccao or '') | tojson }},
+      municipio: {{ (alvo.municipio or '') | tojson }},
+      bairro: {{ (alvo.bairro or '') | tojson }},
+      endereco: {{ (alvo.octopus or '') | tojson }},
+      octopusasint: {{ (alvo.octopusasint or '') | tojson }},
+      anotacoes: {{ (alvo.anotacoes or '') | tojson }},
+      foto: {{ (alvo.foto or '') | tojson }},
+      geradoEm: {{ gerado_em | tojson }},
+    };
+
+    // Já começa a gerar a imagem assim que o script carrega -- desenhar
+    // num canvas é rápido, então o clique em "Enviar" já encontra pronto
+    // ou quase pronto.
+    let fichaBlobPromise = FichaImagem.gerarBlobPng(DADOS_ALVO).catch(function () { return null; });
+
+    async function enviarRelatorio() {
+      const btn = document.querySelector('.btn-enviar');
+      const textoOriginal = btn ? btn.textContent : null;
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando...'; }
+
+      try {
+        const nomeArquivo = FichaImagem.nomeArquivo(DADOS_ALVO.nome);
+        let blob = await fichaBlobPromise;
+        if (!blob) {
+          try { blob = await FichaImagem.gerarBlobPng(DADOS_ALVO); } catch (e) { blob = null; }
+        }
+
+        if (!blob) {
+          alert('Não foi possível gerar a imagem da ficha agora. Tente novamente.');
+          return;
+        }
+
+        // 1) Celular com suporte a compartilhar arquivo: abre o menu nativo
+        //    (WhatsApp, e-mail etc.) já com a imagem pronta.
+        if (navigator.canShare) {
+          try {
+            const arquivo = new File([blob], nomeArquivo, { type: 'image/png' });
+            if (navigator.canShare({ files: [arquivo] })) {
+              await navigator.share({ files: [arquivo], title: 'Ficha SISCAD - ' + DADOS_ALVO.nome });
+              return;
+            }
+          } catch (e) {
+            // usuário cancelou ou o navegador recusou -- ainda garante o
+            // download abaixo, então nada trava.
+          }
+        }
+
+        // 2) Computador (ou qualquer navegador sem esse suporte): baixa a
+        //    imagem pronta. É só anexar no WhatsApp/e-mail manualmente.
+        FichaImagem.baixarBlob(blob, nomeArquivo);
+        alert('Imagem da ficha baixada! Agora é só anexar esse arquivo no WhatsApp (ou onde quiser enviar) -- já sai com foto, dados e anotações, tudo junto.');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
+      }
+    }
+  </script>
+</body>
+</html>

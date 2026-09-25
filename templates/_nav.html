@@ -1,0 +1,50 @@
+{% if usuario_logado %}
+<div class="topbar">
+  <a href="/menu" class="brand"><span class="dot"></span>SISCAD</a>
+  <div class="user-area">
+    <button type="button" class="user-name" id="btnMinhaConta" title="Configurações da conta">{{ usuario_logado }}</button>
+    <a href="/logout" class="btn-sair">Sair</a>
+  </div>
+</div>
+{% if request.path != '/menu' %}
+<div class="subbar">
+  <a href="/menu" class="btn-voltar-menu">← Voltar ao Menu</a>
+</div>
+{% endif %}
+
+<div class="siscad-modal-overlay" id="modalConta">
+  <div class="siscad-modal">
+    <div class="siscad-modal-header">
+      <h3>Configurações da conta</h3>
+      <button type="button" class="siscad-modal-close" id="fecharModalConta">&times;</button>
+    </div>
+    <form id="formConta" autocomplete="off">
+      <div class="siscad-field">
+        <label for="inputEmail">E-mail</label>
+        <input type="email" name="novo_email" id="inputEmail" placeholder="seu@email.com">
+      </div>
+
+      <hr>
+
+      <div class="siscad-field">
+        <label for="inputSenhaAtual">Senha atual</label>
+        <input type="password" name="senha_atual" id="inputSenhaAtual" autocomplete="current-password" required>
+      </div>
+      <div class="siscad-field">
+        <label for="inputNovaSenha">Nova senha (opcional)</label>
+        <input type="password" name="nova_senha" id="inputNovaSenha" autocomplete="new-password">
+      </div>
+      <div class="siscad-field">
+        <label for="inputConfirmarSenha">Confirmar nova senha</label>
+        <input type="password" name="confirmar_senha" id="inputConfirmarSenha" autocomplete="new-password">
+      </div>
+
+      <div id="modalContaMsg" class="siscad-modal-msg"></div>
+
+      <button type="submit" class="siscad-modal-submit">Salvar</button>
+    </form>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='minha-conta.js') }}"></script>
+{% endif %}

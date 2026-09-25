@@ -2,193 +2,678 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Pesquisar Alvo</title>
+  <title>Pesquisar Alvo · SISCAD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    .endereco-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0;
-}
-
-.map-icon {
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
-}
-
+    :root {
+      --navy: #16324a;
+      --navy-dark: #0f2436;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
+      --danger: #c0392b;
+      --danger-dark: #a5301f;
+      --success: #1f8a4c;
+    }
     * { box-sizing: border-box; }
 
     body {
-      background-color: #d2f5d0;
-      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 24px 16px;
+      color: var(--text);
+      font-size: 14px;
     }
 
     .form-wrapper {
       display: flex;
       justify-content: center;
-      padding: 20px;
     }
 
     .form-container {
       width: 100%;
-      max-width: 700px;
-      background-color: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px #aaa;
+      max-width: 1280px;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 12px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      overflow: hidden;
     }
 
-    h2, h3 {
+    .btn-voltar-fixo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 9px 16px;
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 10;
+    }
+    .btn-voltar-fixo:hover { background-color: #e1e5ea; }
+
+    .fixo-topo-esquerda {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .fixo-topo-esquerda .btn-voltar-fixo { position: static; }
+    .btn-opcoes-busca-toggle {
+      position: relative;
+      padding: 9px 15px;
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .btn-opcoes-busca-toggle:hover { background-color: #e1e5ea; }
+    .btn-opcoes-busca-toggle .bolinha-ativa {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #1d4ed8;
+      border: 2px solid #fff;
+      display: none;
+    }
+    .btn-opcoes-busca-toggle.tem-opcao-ativa .bolinha-ativa { display: block; }
+
+    .modal-opcoes-busca-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 30, 45, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .modal-opcoes-busca-caixa {
+      background: #fff;
+      padding: 22px 26px;
+      border-radius: 10px;
+      width: min(360px, 90vw);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .modal-opcoes-busca-caixa h4 {
+      margin: 0 0 14px 0;
+      color: var(--navy);
+      font-size: 15px;
+    }
+    .modal-opcoes-busca-caixa .opcoes-busca {
+      flex-basis: auto;
+    }
+    .modal-opcoes-busca-caixa .opcao-busca {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .btn-fechar-modal-opcoes {
+      margin-top: 16px;
+      width: 100%;
+    }
+
+    .btn-voltar-resultados-fixo {
+      top: 66px;
+      background-color: #e08e2b;
+      color: #fff;
+      border-color: #c97a1e;
+    }
+    .btn-voltar-resultados-fixo:hover { background-color: #cf7f22; }
+
+    .resultados-oculto { display: none !important; }
+
+    .paginacao {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .paginacao form { margin: 0; }
+    .paginacao button {
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    .paginacao button:hover:not(:disabled) { background-color: #e1e5ea; }
+    .paginacao button:disabled { opacity: .5; cursor: default; }
+
+    .alvo-titulo-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .top-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .top-actions form { display: inline-flex; }
+    .btn-top-action {
+      background-color: #eceff2;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .btn-top-action.primary { background-color: var(--navy); color: #fff; border-color: var(--navy); }
+    .btn-top-action.primary:hover { background-color: var(--navy-dark); }
+    .btn-top-action.danger { background-color: var(--danger); color: #fff; border-color: var(--danger); }
+    .btn-top-action.danger:hover { background-color: var(--danger-dark); }
+    .btn-top-action.success { background-color: var(--success); color: #fff; border-color: var(--success); }
+    .btn-top-action.success:hover { background-color: #176b3a; }
+
+    .fotos-antigas-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    .foto-antiga-item {
+      text-align: center;
+    }
+    .foto-antiga-item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: zoom-in;
+    }
+    .foto-antiga-item .btn-excluir-foto-antiga {
+      margin-top: 6px;
+      width: 100%;
+      background-color: var(--danger);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .foto-antiga-item .btn-excluir-foto-antiga:hover { background-color: var(--danger-dark); }
+    .fotos-antigas-vazio {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      padding: 20px 0;
+    }
+
+    .btn-voltar-grade {
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+    .btn-voltar-grade:hover { background-color: #e1e5ea; }
+
+    .viewer-imagem-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .viewer-imagem-wrap img {
+      max-width: 100%;
+      max-height: 60vh;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      object-fit: contain;
+    }
+    .viewer-nav {
+      background-color: #eceff2;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .viewer-nav:hover { background-color: #dfe4e9; }
+    #viewer-contador {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .btn-exportar {
+      background-color: #eceff2;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-exportar:hover { background-color: #dfe4e9; }
+
+    .card-header {
+      background-color: var(--navy);
+      color: #fff;
+      padding: 18px 24px;
+      text-align: center;
+      position: relative;
+    }
+    .card-header .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9db3c4;
+      margin-bottom: 4px;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .card-body { padding: 22px 24px 26px; }
+
+    h3, h4 {
       text-align: center;
       margin-top: 0;
+      font-weight: 600;
+      color: var(--navy);
+    }
+    h3 { font-size: 15px; }
+    h4 { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      align-items: stretch;
+    }
+    .search-row input,
+    .search-row select {
+      flex: 1;
+      min-width: 140px;
+      margin: 0;
+    }
+    .search-row button { flex-shrink: 0; }
+
+    .opcoes-busca {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-basis: 100%;
+    }
+    .opcao-busca {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 7px 14px;
+      border-radius: 8px;
+      border: 1.5px solid transparent;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .opcao-busca input { flex: none; width: auto; margin: 0; transform: scale(1.15); accent-color: currentColor; }
+    .opcao-parecido {
+      background-color: #e7f0ff;
+      color: #1d4ed8;
+      border-color: #bcd4ff;
+    }
+    .opcao-fonetica {
+      background-color: #fff1de;
+      color: #b45309;
+      border-color: #fadba0;
+    }
+
+    .barra-progresso-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 30, 45, 0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .barra-progresso-caixa {
+      background: #fff;
+      padding: 22px 26px;
+      border-radius: 10px;
+      width: min(360px, 90vw);
+      text-align: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    }
+    .barra-progresso-trilha {
+      height: 10px;
+      border-radius: 999px;
+      background: #e5e9ee;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .barra-progresso-preenchimento {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--navy));
+      transition: width 0.35s ease;
+    }
+    #barra-progresso-texto {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+      font-weight: 600;
     }
 
     input, textarea, select {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 8px;
-      border: 1px solid #aaa;
-      font-size: 16px;
+      padding: 9px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background-color: #fbfcfd;
     }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47,102,144,0.12);
+      background-color: #fff;
+    }
+    textarea { resize: vertical; }
 
     button {
-      background-color: #0d8df7;
+      background-color: var(--accent);
       color: white;
-      font-weight: bold;
+      font-weight: 600;
       cursor: pointer;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
+      padding: 9px 14px;
+      font-size: 14px;
+      transition: background-color .15s ease;
+    }
+    button:hover { background-color: #24506f; }
+
+    .btn-secondary {
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      width: 100%;
+      margin-bottom: 16px;
+    }
+    .btn-secondary:hover { background-color: #e1e5ea; }
+
+    .alert-error {
+      text-align: center;
+      font-weight: 600;
+      color: var(--danger-dark);
+      background-color: #fdecea;
+      border: 1px solid #f5c6c1;
       padding: 10px;
-      font-size: 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 14px;
     }
 
-    button:hover {
-      background-color: #0092cc;
+    .resultados-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
+    @media screen and (max-width: 640px) {
+      .resultados-grid { grid-template-columns: 1fr; }
+    }
+
+    .resultado-form { margin: 0; }
 
     .resultado-button {
-      background-color: #f08c00;
-      color: white;
-      font-weight: bold;
-      border: none;
+      background-color: #eef3f7;
+      color: var(--navy);
+      font-weight: 600;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 10px;
-      font-size: 15px;
+      padding: 10px 12px;
+      font-size: 13.5px;
       cursor: pointer;
-      transition: background-color 0.3s;
-      margin-bottom: 10px;
+      width: 100%;
+      transition: background-color .15s ease;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
-
-    .resultado-button:hover {
-      background-color: #cc7200;
+    .resultado-button:hover { background-color: #dfe9f0; }
+    .resultado-button .resultado-thumb {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      background-color: #dbe2ea;
+      box-shadow: 0 1px 3px rgba(0,0,0,.15);
     }
+    .resultado-button .resultado-nome { flex: 1; }
+    /* Marcado em vermelho pelo JS quando esse alvo já foi visto nesta pesquisa */
+    .resultado-button.visto { color: var(--danger-dark); }
+    .resultado-button.visto .resultado-nome { color: var(--danger-dark); }
 
     .resultado, .alvo-info {
-      margin-top: 30px;
-      padding: 20px;
-      background-color: #b4ebb4;
-      border-radius: 10px;
-      box-shadow: 0 0 10px #888;
+      margin-top: 20px;
+      padding: 18px;
+      background-color: #f7f9fb;
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
 
     .alvo-info-flex {
       display: flex;
       gap: 20px;
       justify-content: center;
+      align-items: flex-start;
       flex-wrap: wrap;
+      text-align: left;
     }
 
     .alvo-info img {
-      max-width: 220px;
+      max-width: 200px;
       height: auto;
-      max-height: 350px;
+      max-height: 300px;
       object-fit: contain;
-      border-radius: 12px;
-      border: 2px solid #064d26;
+      border-radius: 8px;
+      border: 1px solid var(--border);
       flex-shrink: 0;
     }
-.alvo-info img:hover {
-  transform: scale(2.0);
-  z-index: 10;
-}
+    .alvo-info img:hover {
+      transform: scale(1.8);
+      z-index: 10;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
     .alvo-dados {
       flex: 1;
-      min-width: 240px;
+      min-width: 280px;
       max-width: 100%;
     }
 
-    .alvo-dados p {
-      margin: 8px 0;
+    .dados-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 20px;
     }
+    .dados-grid .full { grid-column: 1 / -1; }
+
+    .data-row {
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .data-row:last-child { border-bottom: none; }
+    .label { color: var(--text-muted); font-weight: 600; }
+    .value { font-weight: 700; color: var(--text); }
+
+    .endereco-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .endereco-container .map-icon-link { display: flex; }
+    .map-icon {
+      width: 22px;
+      height: 22px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-sim { background-color: #e4f5ea; color: var(--success); }
+    .status-nao { background-color: #fdecea; color: var(--danger-dark); }
 
     .anotacoes-box {
       white-space: pre-wrap;
       background-color: #fff;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      max-height: 300px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      max-height: 260px;
       overflow-y: auto;
-      margin-top: 20px;
+      margin-top: 8px;
+      text-align: left;
+      font-size: 13px;
+      line-height: 1.5;
     }
 
     @media screen and (max-width: 600px) {
       .alvo-info-flex { flex-direction: column; align-items: center; }
-    }
-
-    .centered {
-      text-align: center;
+      .card-body { padding: 16px; }
+      .dados-grid { grid-template-columns: 1fr; }
+      .btn-voltar-fixo { position: static; display: inline-block; margin-bottom: 14px; }
     }
 
     .modal-overlay {
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
+      background: rgba(15,36,54,0.55);
       display: none;
       align-items: center;
       justify-content: center;
       z-index: 999;
+      padding: 16px;
     }
 
     .modal-box {
       background: #fff;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 95vh;
+      padding: 24px;
+      border-radius: 10px;
+      max-width: 720px;
+      width: 100%;
+      max-height: 92vh;
       overflow-y: auto;
-      box-shadow: 0 0 12px #000;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
       position: relative;
+      text-align: left;
+    }
+
+    .modal-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 20px;
+    }
+    .modal-grid .full { grid-column: 1 / -1; }
+    .combo-add-row { display: flex; gap: 6px; align-items: stretch; }
+    .combo-add-row select { flex: 1; }
+    .btn-add-opcao {
+      width: 40px; padding: 0; flex-shrink: 0;
+      border-radius: 6px; border: 1px solid var(--border);
+      background-color: #eceff2; color: var(--navy);
+      font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer;
+    }
+    .btn-add-opcao:hover { background-color: #dfe4e9; }
+
+    @media screen and (max-width: 640px) {
+      .modal-grid { grid-template-columns: 1fr; }
     }
 
     .modal-box h3 {
       margin-top: 0;
       text-align: center;
+      color: var(--navy);
+    }
+
+    .modal-box label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      margin: 10px 0 4px;
     }
 
     .close-button {
-      background-color: #ff4c4c;
-      color: white;
-      font-weight: bold;
-      border: none;
-      padding: 8px 14px;
+      background-color: #eceff2;
+      color: var(--text);
+      font-weight: 600;
+      border: 1px solid var(--border);
+      padding: 7px 14px;
       border-radius: 6px;
       cursor: pointer;
-      float: right;
-      margin-top: -10px;
-      margin-right: -10px;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 13px;
     }
-
-    .close-button:hover {
-      background-color: #cc0000;
-    }
+    .close-button:hover { background-color: #e1e5ea; }
   </style>
   <script>
     function abrirModal() {
@@ -198,250 +683,809 @@
       document.getElementById("modal-edicao").style.display = "none";
     }
   </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='anotacoes.css') }}">
 </head>
 <body>
+  <div class="fixo-topo-esquerda">
+    <a href="/menu" class="btn-voltar-fixo">Voltar ao menu</a>
+    <button type="button" class="btn-opcoes-busca-toggle" id="btn-opcoes-busca-toggle"
+            onclick="abrirModalOpcoesBusca()" title="Opções de busca (nomes parecidos, fonética)">
+      +
+      <span class="bolinha-ativa"></span>
+    </button>
+  </div>
+  {% if alvo and resultados %}
+    <button type="button" id="btn-voltar-resultados-fixo"
+            class="btn-voltar-fixo btn-voltar-resultados-fixo"
+            onclick="voltarAosResultados()">↑ Voltar aos resultados</button>
+  {% endif %}
 
   <div class="form-wrapper">
     <div class="form-container">
-
-      <h2>Pesquisar Alvo</h2>
-      
-      {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for category, msg in messages %}
-      <div id="msg-flash" style="
-        position: fixed;
-        top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        background-color: #d4edda;
-        color: #155724;
-        font-weight: bold;
-        padding: 16px 28px;
-        border-radius: 12px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.25);
-        border: 1px solid #c3e6cb;
-        z-index: 9999;">
-        {{ msg }}
+      <div class="card-header">
+        <span class="eyebrow">SISCAD</span>
+        <h2>Pesquisar Alvo</h2>
       </div>
-      <script>
-        setTimeout(() => {
-          const el = document.getElementById('msg-flash');
-          if (el) el.style.display = 'none';
-        }, 3000); // some em 3 segundos
-      </script>
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-      <form method="POST" style="margin-bottom: 15px;">
-        <input type="text" name="termo" placeholder="nome ou vulgo" value="{{ termo }}" required>
-        <input type="text" name="bairro" placeholder="bairro (opcional)" value="{{ bairro }}">
-        <button type="submit">🔍 pesquisar</button>
-      </form>
 
-      <form action="/menu">
-        <button type="submit">🏠 voltar ao menu</button>
-      </form>
+      <div class="card-body">
 
-      {% if mensagem %}
-        <p style="text-align:center; font-weight:bold; color:#a94442; background-color:#f2dede; padding:10px; border-radius:8px;">
-          {{ mensagem }}
-        </p>
-      {% endif %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, msg in messages %}
+              <div id="msg-flash" style="
+                position: fixed;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                background-color: #e4f5ea;
+                color: #1f8a4c;
+                font-weight: 600;
+                font-size: 14px;
+                padding: 14px 24px;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                border: 1px solid #c3e6cb;
+                z-index: 9999;">
+                {{ msg }}
+              </div>
+              <script>
+                setTimeout(() => {
+                  const el = document.getElementById('msg-flash');
+                  if (el) el.style.display = 'none';
+                }, 3000);
+              </script>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
-      {% if resultados %}
-        <div class="resultado">
-          <h3>Resultados:</h3>
-          {% for r in resultados %}
-            <form method="GET">
-              <input type="hidden" name="id" value="{{ r.id }}">
-              <button type="submit" class="resultado-button">{{ r.nome }} – {{ r.vulgo }}</button>
-            </form>
-          {% endfor %}
+        <form method="POST" class="search-row{% if alvo %} resultados-oculto{% endif %}" id="form-pesquisa">
+          <input type="text" name="termo" placeholder="Nome ou vulgo" value="{{ termo }}" required>
+          <select name="municipio" id="busca-municipio" data-atual="{{ municipio or '' }}">
+            <option value="">Município (todos)</option>
+          </select>
+          <select name="bairro" id="busca-bairro" data-atual="{{ bairro or '' }}">
+            <option value="">Bairro (todos)</option>
+          </select>
+          <button type="submit">Pesquisar</button>
+        </form>
+
+        <div id="barra-progresso-overlay" class="barra-progresso-overlay">
+          <div class="barra-progresso-caixa">
+            <div class="barra-progresso-trilha">
+              <div class="barra-progresso-preenchimento" id="barra-progresso-preenchimento"></div>
+            </div>
+            <p id="barra-progresso-texto">Buscando...</p>
+          </div>
         </div>
+
+        {% if mensagem %}
+          <p class="alert-error">{{ mensagem }}</p>
+        {% endif %}
+
+        {% if resultados %}
+          <div class="resultado{% if alvo %} resultados-oculto{% endif %}" id="resultados-lista">
+            <h3>Resultados</h3>
+            <div class="resultados-grid">
+              {% for r in resultados %}
+                <form method="GET" class="resultado-form" data-resultado-form data-id="{{ r.id }}">
+                  <input type="hidden" name="id" value="{{ r.id }}">
+                  <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="municipio" value="{{ municipio }}">
+                  <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
+                  <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
+                  <button type="submit" class="resultado-button" data-id="{{ r.id }}">
+                    {% if r.foto %}
+                      <img src="{{ r.foto }}" alt="" class="resultado-thumb">
+                    {% else %}
+                      <span class="resultado-thumb"></span>
+                    {% endif %}
+                    <span class="resultado-nome">{{ r.nome }} — {{ r.vulgo }}</span>
+                  </button>
+                </form>
+              {% endfor %}
+            </div>
+
+            {% if total_paginas and total_paginas > 1 %}
+              <div class="paginacao">
+                <form method="GET">
+                  <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="municipio" value="{{ municipio }}">
+                  <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
+                  <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
+                  <input type="hidden" name="pagina" value="{{ pagina - 1 }}">
+                  <button type="submit" {% if pagina <= 1 %}disabled{% endif %}>‹ Anterior</button>
+                </form>
+                <span>Página {{ pagina }} de {{ total_paginas }}</span>
+                <form method="GET">
+                  <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="municipio" value="{{ municipio }}">
+                  <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
+                  <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
+                  <input type="hidden" name="pagina" value="{{ pagina + 1 }}">
+                  <button type="submit" {% if pagina >= total_paginas %}disabled{% endif %}>Próxima ›</button>
+                </form>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+
+        {% if alvo %}
+          <div class="alvo-info" id="alvo-selecionado">
+            <div class="alvo-titulo-row">
+              <h3>Alvo Selecionado</h3>
+              <div class="top-actions">
+                <button type="button" class="btn-top-action primary" onclick="abrirModal()">Alterar dados</button>
+                {% if is_admin %}
+                  <form method="POST" action="/excluir_alvo" onsubmit="return confirm('Tem certeza que deseja excluir este alvo?')">
+                    <input type="hidden" name="id" value="{{ alvo.id }}">
+                    <button type="submit" class="btn-top-action danger">Excluir cadastro</button>
+                  </form>
+                {% endif %}
+                {% if fotos_antigas_count and fotos_antigas_count > 0 %}
+                  <button type="button" class="btn-top-action success" id="btn-fotos-antigas" onclick="abrirModalFotosAntigas({{ alvo.id }})">+ 📷 Fotos antigas</button>
+                {% endif %}
+                <button type="button" class="btn-exportar" onclick="copiarTextoAlvo()" title="Copiar texto formatado para colar no WhatsApp">📋 Copiar texto</button>
+                {% if alvo.foto %}
+                  <button type="button" class="btn-exportar" id="btn-copiar-imagem" onclick="copiarImagemAlvo()" title="Copiar a foto para colar em seguida">🖼️ Copiar imagem</button>
+                {% endif %}
+              </div>
+            </div>
+            <div class="alvo-info-flex">
+              {% if alvo.foto %}
+                <img src="{{ alvo.foto }}" alt="Foto do alvo">
+              {% endif %}
+
+              <div class="alvo-dados">
+                <div class="dados-grid">
+                  <div class="data-row"><span class="label">Nome</span><span class="value">{{ alvo.nome }}</span></div>
+                  <div class="data-row"><span class="label">Vulgo</span><span class="value">{{ alvo.vulgo }}</span></div>
+                  <div class="data-row"><span class="label">Genitora</span><span class="value">{{ alvo.genitora }}</span></div>
+                  <div class="data-row"><span class="label">Facção</span><span class="value">{{ alvo.faccao }}</span></div>
+                  <div class="data-row"><span class="label">Município</span><span class="value">{{ alvo.municipio }}</span></div>
+                  <div class="data-row"><span class="label">Bairro</span><span class="value">{{ alvo.bairro }}</span></div>
+                  <div class="endereco-container full">
+                    <span class="label">Endereço</span>
+                    <span class="value">{{ alvo.octopus }}</span>
+                    <a href="https://www.google.com/maps/search/{{ alvo.octopus | urlencode }}" target="_blank" class="map-icon-link">
+                      <img src="/static/icon/pin.png" alt="Localizar no mapa" class="map-icon">
+                    </a>
+                  </div>
+                  <div class="data-row full">
+                    <span class="label">Octopus Asint</span>
+                    <span class="value">
+                      {% if alvo.octopusasint == "SIM" %}
+                        <span class="status-badge status-sim">SIM</span>
+                      {% elif alvo.octopusasint == "NAO" %}
+                        <span class="status-badge status-nao">NÃO</span>
+                      {% else %}
+                        {{ alvo.octopusasint }}
+                      {% endif %}
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <h4>Anotações</h4>
+              <div class="anotacoes-box">{{ alvo.anotacoes }}</div>
+            </div>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE EDIÇÃO -->
+  <div id="modal-edicao" class="modal-overlay">
+    <div class="modal-box">
+      <button type="button" class="close-button" onclick="fecharModal()">Fechar</button>
+      <h3>Editar Dados do Alvo</h3>
+
+      {% if alvo.foto %}
+      <div style="text-align:center; margin-bottom:16px;">
+        <img src="{{ alvo.foto }}"
+             alt="Foto atual"
+             style="max-width:160px; max-height:220px; border-radius:8px; border:1px solid #dbe2ea;">
+        <p style="margin-top:6px; font-size:12px; color:#6b7280;">Foto atual</p>
+      </div>
       {% endif %}
 
-      {% if alvo %}
-        <div class="alvo-info">
-          <h3>Alvo Selecionado</h3>
-          <div class="alvo-info-flex">
-            {% if alvo.foto %}
-              <img src="{{ alvo.foto if alvo.foto.startswith('http') else url_for('static', filename='IMAGEM/' + alvo.foto) }}" alt="Foto do alvo">
-            {% endif %}
+      <form method="POST" enctype="multipart/form-data" action="/editar_alvo">
+        <input type="hidden" name="id" value="{{ alvo.id }}">
+        <input type="hidden" name="termo_busca" value="{{ termo }}">
+        <input type="hidden" name="bairro_busca" value="{{ bairro }}">
+        <input type="hidden" name="municipio_busca" value="{{ municipio }}">
 
-            <div class="alvo-dados">
-              <p><strong>Nome:</strong> {{ alvo.nome }}</p>
-              <p><strong>Vulgo:</strong> {{ alvo.vulgo }}</p>
-              <p><strong>Genitora:</strong> {{ alvo.genitora }}</p>
-              <p><strong>Facção:</strong> {{ alvo.faccao }}</p>
-              <p><strong>Município:</strong> {{ alvo.municipio }}</p>
-              <p><strong>Bairro:</strong> {{ alvo.bairro }}</p>
-              <div class="endereco-container">
-  <strong>Endereço:</strong>
-  <span>{{ alvo.octopus }}</span>
-  <a href="https://www.google.com/maps/search/{{ alvo.octopus | urlencode }}" target="_blank">
-    <img src="/static/icon/pin.png" alt="Localizar no mapa" class="map-icon">
-  </a>
-</div>
-  {% if alvo.octopusasint == "SIM" %} 
-  <p style="color: green; font-weight: bold;">
-    🦉 <strong>Octopus Asint:</strong> SIM
-  </p>
-{% elif alvo.octopusasint == "NAO" %}
-  <p style="color: red; font-weight: bold;">
-    ❌ <strong>Octopus Asint:</strong> NAO
-  </p>
-{% else %}
-  <p><strong>Octopus Asint:</strong> {{ alvo.octopusasint }}</p>
-{% endif %}
-              <button type="button" onclick="abrirModal()">✏️ Alterar dados</button>
+        <div class="modal-grid">
+          <div>
+            <label for="edit-nome">Nome</label>
+            <input type="text" id="edit-nome" name="nome" value="{{ alvo.nome }}" placeholder="Nome">
+          </div>
 
-              {% if is_admin %}
-                <form method="POST" action="/excluir_alvo" onsubmit="return confirm('Tem certeza que deseja excluir este alvo?')">
-                  <input type="hidden" name="id" value="{{ alvo.id }}">
-                  <button type="submit" style="background-color:#ff4c4c;">🗑️ excluir cadastro</button>
-                </form>
-              {% endif %}
+          <div>
+            <label for="edit-vulgo">Vulgo</label>
+            <input type="text" id="edit-vulgo" name="vulgo" value="{{ alvo.vulgo }}" placeholder="Vulgo">
+          </div>
+
+          <div>
+            <label for="edit-genitora">Genitora</label>
+            <input type="text" id="edit-genitora" name="genitora" value="{{ alvo.genitora }}" placeholder="Genitora">
+          </div>
+
+          <div>
+            <label for="faccao">Facção</label>
+            <div class="combo-add-row">
+              <select name="faccao" id="faccao" data-atual="{{ alvo.faccao or '' }}" required>
+                <option value="">Selecione a facção</option>
+              </select>
+              <button type="button" class="btn-add-opcao" title="Adicionar facção"
+                      onclick="abrirNovaOpcao('faccao', 'faccao')">+</button>
+              <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                      onclick="editarOpcaoSelecionada('faccao', 'faccao')">✏️</button>
+              <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                      onclick="excluirOpcaoSelecionada('faccao', 'faccao')">🗑️</button>
             </div>
           </div>
 
-          <div class="centered" style="margin-top: 20px;">
-            <h4>Anotações:</h4>
-            <div class="anotacoes-box">{{ alvo.anotacoes }}</div>
+          <div>
+            <label for="municipio">Município</label>
+            <div class="combo-add-row">
+              <select name="municipio" id="municipio" data-atual="{{ alvo.municipio or '' }}" required>
+                <option value="">Selecione</option>
+              </select>
+              <button type="button" class="btn-add-opcao" title="Adicionar município"
+                      onclick="abrirNovaOpcao('municipio', 'municipio')">+</button>
+              <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                      onclick="editarOpcaoSelecionada('municipio', 'municipio')">✏️</button>
+              <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                      onclick="excluirOpcaoSelecionada('municipio', 'municipio')">🗑️</button>
+            </div>
+          </div>
+
+          <div>
+            <label for="bairro">Bairro</label>
+            <div class="combo-add-row">
+              <select name="bairro" id="bairro" data-atual="{{ alvo.bairro or '' }}" required>
+                <option value="">Selecione o bairro</option>
+              </select>
+              <button type="button" class="btn-add-opcao" title="Adicionar bairro"
+                      onclick="abrirNovaOpcao('bairro', 'bairro', 'municipio')">+</button>
+              <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                      onclick="editarOpcaoSelecionada('bairro', 'bairro')">✏️</button>
+              <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                      onclick="excluirOpcaoSelecionada('bairro', 'bairro')">🗑️</button>
+            </div>
+          </div>
+
+          <div>
+            <label for="edit-octopus">Endereço</label>
+            <input type="text" id="edit-octopus" name="octopus" value="{{ alvo.octopus }}" placeholder="Endereço">
+          </div>
+
+          <div>
+            <label for="octopusasint">Octopus Asint</label>
+            <select name="octopusasint" required>
+              <option value="" {% if not alvo.octopusasint %}selected{% endif %}>Selecione</option>
+              <option value="NAO" {% if alvo.octopusasint == "NAO" %}selected{% endif %}>NÃO</option>
+              <option value="SIM" {% if alvo.octopusasint == "SIM" %}selected{% endif %}>SIM</option>
+            </select>
+          </div>
+
+          <div class="full">
+            <div class="anotacoes-cabecalho-campo">
+              <label for="anotacoes-lista-modal" style="margin:0;">Anotações</label>
+              <button type="button" class="btn-nova-anotacao" title="Nova anotação"
+                      onclick="abrirModalAnotacao()">+</button>
+            </div>
+            <div id="anotacoes-lista-modal" class="anotacoes-lista"></div>
+          </div>
+
+          <div class="full">
+            <label for="nova_foto">Nova foto</label>
+            <input type="file" id="nova_foto" name="nova_foto" accept="image/*">
           </div>
         </div>
-      {% endif %}
 
+        <button type="submit" style="width:100%; margin-top:14px;">Salvar alterações</button>
+      </form>
     </div>
   </div>
 
-  <!-- 🪟 MODAL DE EDIÇÃO FLUTUANTE UNIFICADO -->
-<div id="modal-edicao" class="modal-overlay">
-  <div class="modal-box">
-    <button type="button" class="close-button" onclick="fecharModal()">❌ fechar</button>
-    <h3>Editar Dados do Alvo</h3>
+  <!-- MODAL DE FOTOS ANTIGAS -->
+  <div id="modal-fotos-antigas" class="modal-overlay">
+    <div class="modal-box" style="max-width: 620px;">
+      <button type="button" class="close-button" onclick="fecharModalFotosAntigas()">Fechar</button>
+      <h3>Fotos Antigas</h3>
+      <div id="fotos-antigas-conteudo" class="fotos-antigas-grid"></div>
 
-    {% if alvo.foto %}
-    <div style="text-align:center; margin-bottom:20px;">
-      <img src="{{ alvo.foto if alvo.foto.startswith('http') else url_for('static', filename='IMAGEM/' + alvo.foto) }}"
-           alt="Foto atual"
-           style="max-width:180px; max-height:250px; border-radius:10px; border:2px solid #0e93ec;">
-      <p style="margin-top:8px; font-weight:bold;">Foto atual</p>
+      <div id="fotos-antigas-viewer" style="display:none;">
+        <button type="button" class="btn-voltar-grade" onclick="voltarParaGradeFotos()">‹ Voltar para a lista</button>
+        <div class="viewer-imagem-wrap">
+          <button type="button" class="viewer-nav" onclick="navegarFotoAntiga(-1)" title="Anterior">‹</button>
+          <img id="viewer-imagem-atual" src="" alt="Foto ampliada">
+          <button type="button" class="viewer-nav" onclick="navegarFotoAntiga(1)" title="Próxima">›</button>
+        </div>
+        <div id="viewer-contador"></div>
+      </div>
     </div>
+  </div>
+
+  <!-- Comboboxes dinâmicos de Facção / Município / Bairro / Anotações -->
+  <script src="{{ url_for('static', filename='opcoes.js') }}"></script>
+  <script src="{{ url_for('static', filename='anotacoes.js') }}"></script>
+  <script src="{{ url_for('static', filename='ficha-imagem.js') }}"></script>
+  <script>
+    {% if alvo %}
+    // Dados do alvo selecionado, prontos pra montar o texto/imagem da ficha.
+    const DADOS_ALVO_SELECIONADO = {
+      id: {{ alvo.id }},
+      nome: {{ alvo.nome | tojson }},
+      vulgo: {{ (alvo.vulgo or '') | tojson }},
+      genitora: {{ (alvo.genitora or '') | tojson }},
+      faccao: {{ (alvo.faccao or '') | tojson }},
+      municipio: {{ (alvo.municipio or '') | tojson }},
+      bairro: {{ (alvo.bairro or '') | tojson }},
+      endereco: {{ (alvo.octopus or '') | tojson }},
+      octopusasint: {{ (alvo.octopusasint or '') | tojson }},
+      anotacoes: {{ (alvo.anotacoes or '') | tojson }},
+      foto: {{ (alvo.foto or '') | tojson }},
+      geradoEm: new Date().toLocaleString('pt-BR'),
+    };
+
+    // Já começa a gerar a imagem em segundo plano, pro clique em "Copiar
+    // imagem" ficar quase instantâneo.
+    let fichaBlobPromiseSelecionado = FichaImagem.gerarBlobFoto(DADOS_ALVO_SELECIONADO.foto).catch(function () { return null; });
+
+    const IS_ADMIN = {{ 'true' if is_admin else 'false' }};
+
+    // ---- Fotos antigas (substituídas ao editar o cadastro) ----
+    let fotosAntigasAtual = [];
+    let fotosAntigasIndiceAtual = 0;
+    let pessoaIdFotosAntigas = null;
+
+    function abrirModalFotosAntigas(pessoaId) {
+      pessoaIdFotosAntigas = pessoaId;
+      document.getElementById('modal-fotos-antigas').style.display = 'flex';
+      carregarFotosAntigas(pessoaId);
+    }
+
+    function carregarFotosAntigas(pessoaId) {
+      const conteudo = document.getElementById('fotos-antigas-conteudo');
+      voltarParaGradeFotos();
+      conteudo.innerHTML = '<p class="fotos-antigas-vazio">Carregando...</p>';
+
+      fetch(`/fotos_antigas/${pessoaId}`)
+        .then(res => res.json())
+        .then(data => {
+          fotosAntigasAtual = data.fotos || [];
+          renderFotosAntigas(fotosAntigasAtual);
+        })
+        .catch(() => {
+          conteudo.innerHTML = '<p class="fotos-antigas-vazio">Não foi possível carregar as fotos.</p>';
+        });
+    }
+
+    function fecharModalFotosAntigas() {
+      document.getElementById('modal-fotos-antigas').style.display = 'none';
+    }
+
+    function renderFotosAntigas(fotos) {
+      const conteudo = document.getElementById('fotos-antigas-conteudo');
+
+      if (!fotos.length) {
+        conteudo.innerHTML = '<p class="fotos-antigas-vazio">Nenhuma foto antiga.</p>';
+        return;
+      }
+
+      conteudo.innerHTML = '';
+      fotos.forEach((foto, indice) => {
+        const item = document.createElement('div');
+        item.className = 'foto-antiga-item';
+        item.dataset.fotoId = foto.id;
+
+        const img = document.createElement('img');
+        img.src = foto.url;
+        img.alt = 'Foto antiga';
+        img.onclick = () => abrirFotoNoViewer(indice);
+        item.appendChild(img);
+
+        if (IS_ADMIN) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn-excluir-foto-antiga';
+          btn.textContent = 'Excluir';
+          btn.onclick = (e) => { e.stopPropagation(); excluirFotoAntiga(foto.id); };
+          item.appendChild(btn);
+        }
+
+        conteudo.appendChild(item);
+      });
+    }
+
+    // Abre a foto ampliada dentro do próprio modal (álbum), em vez de numa
+    // aba/janela nova -- com botões de avançar/voltar entre as fotos.
+    function abrirFotoNoViewer(indice) {
+      fotosAntigasIndiceAtual = indice;
+      atualizarImagemViewer();
+      document.getElementById('fotos-antigas-conteudo').style.display = 'none';
+      document.getElementById('fotos-antigas-viewer').style.display = 'block';
+    }
+
+    function voltarParaGradeFotos() {
+      document.getElementById('fotos-antigas-viewer').style.display = 'none';
+      document.getElementById('fotos-antigas-conteudo').style.display = 'grid';
+    }
+
+    function navegarFotoAntiga(direcao) {
+      if (!fotosAntigasAtual.length) return;
+      fotosAntigasIndiceAtual = (fotosAntigasIndiceAtual + direcao + fotosAntigasAtual.length) % fotosAntigasAtual.length;
+      atualizarImagemViewer();
+    }
+
+    function atualizarImagemViewer() {
+      const foto = fotosAntigasAtual[fotosAntigasIndiceAtual];
+      if (!foto) return;
+      document.getElementById('viewer-imagem-atual').src = foto.url;
+      document.getElementById('viewer-contador').textContent = `${fotosAntigasIndiceAtual + 1} de ${fotosAntigasAtual.length}`;
+
+      const mostrarNav = fotosAntigasAtual.length > 1;
+      document.querySelectorAll('.viewer-nav').forEach(btn => {
+        btn.style.display = mostrarNav ? '' : 'none';
+      });
+    }
+
+    function excluirFotoAntiga(fotoId) {
+      if (!confirm('Excluir esta foto definitivamente (inclusive do Cloudinary)?')) return;
+
+      fetch(`/fotos_antigas/${fotoId}/excluir`, { method: 'POST' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.erro) {
+            alert(data.erro);
+            return;
+          }
+
+          // Se a foto excluída era a que estava valendo no perfil, atualiza
+          // a tela principal (sem precisar recarregar a página) -- corrige
+          // o bug de continuar mostrando a foto antiga no cadastro.
+          if (data.foto_atual_alterada) {
+            atualizarFotoPrincipalNaTela(data.nova_foto_url || '');
+          }
+
+          if (!data.restantes) {
+            fecharModalFotosAntigas();
+            const btnPrincipal = document.getElementById('btn-fotos-antigas');
+            if (btnPrincipal) btnPrincipal.remove();
+          } else if (pessoaIdFotosAntigas) {
+            // Recarrega a lista (reflete a exclusão e a eventual promoção)
+            carregarFotosAntigas(pessoaIdFotosAntigas);
+          }
+        })
+        .catch(() => alert('Não foi possível excluir a foto.'));
+    }
+
+    // Atualiza a foto exibida no cadastro (e os dados usados por "copiar
+    // imagem") sem precisar recarregar a página.
+    function atualizarFotoPrincipalNaTela(novaUrl) {
+      const imgPrincipal = document.querySelector('.alvo-info-flex > img');
+      if (novaUrl) {
+        if (imgPrincipal) imgPrincipal.src = novaUrl;
+      } else if (imgPrincipal) {
+        imgPrincipal.remove();
+      }
+
+      const imgModalEdicao = document.querySelector('#modal-edicao img[alt="Foto atual"]');
+      if (imgModalEdicao) {
+        if (novaUrl) {
+          imgModalEdicao.src = novaUrl;
+        } else {
+          const wrapper = imgModalEdicao.closest('div');
+          if (wrapper) wrapper.remove();
+        }
+      }
+
+      DADOS_ALVO_SELECIONADO.foto = novaUrl;
+      fichaBlobPromiseSelecionado = FichaImagem.gerarBlobFoto(novaUrl).catch(function () { return null; });
+
+      const btnCopiarImagem = document.getElementById('btn-copiar-imagem');
+      if (!novaUrl && btnCopiarImagem) {
+        btnCopiarImagem.remove();
+      }
+    }
+
+    // Tenta copiar via API moderna; se não der (ex: sem HTTPS), cai pro
+    // método antigo (textarea + execCommand), que funciona até em http://.
+    function copiarTextoAntigo(texto) {
+      const textarea = document.createElement('textarea');
+      textarea.value = texto;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      let sucesso = false;
+      try { sucesso = document.execCommand('copy'); } catch (e) { sucesso = false; }
+      document.body.removeChild(textarea);
+      return sucesso;
+    }
+
+    async function copiarTextoAlvo() {
+      const texto = FichaImagem.montarTexto(DADOS_ALVO_SELECIONADO);
+
+      try {
+        await navigator.clipboard.writeText(texto);
+        alert('Texto copiado! Agora é só colar no WhatsApp (ou onde quiser).');
+        return;
+      } catch (e) {
+        // segue pro método alternativo abaixo
+      }
+
+      if (copiarTextoAntigo(texto)) {
+        alert('Texto copiado! Agora é só colar no WhatsApp (ou onde quiser).');
+      } else {
+        prompt('Não deu pra copiar automaticamente. Copie manualmente:', texto);
+      }
+    }
+
+    async function copiarImagemAlvo() {
+      if (!DADOS_ALVO_SELECIONADO.foto) {
+        alert('Esse alvo não tem foto cadastrada.');
+        return;
+      }
+
+      const btn = document.getElementById('btn-copiar-imagem');
+      const textoOriginal = btn ? btn.textContent : null;
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando...'; }
+
+      try {
+        let blob = await fichaBlobPromiseSelecionado;
+        if (!blob) {
+          try { blob = await FichaImagem.gerarBlobFoto(DADOS_ALVO_SELECIONADO.foto); } catch (e) { blob = null; }
+        }
+        if (!blob) {
+          alert('Não foi possível carregar a foto agora. Tente novamente.');
+          return;
+        }
+
+        // Tenta copiar a imagem direto pra área de transferência -- assim
+        // dá pra colar ela em seguida, depois de já ter colado o texto.
+        if (navigator.clipboard && window.ClipboardItem) {
+          try {
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+            alert('Foto copiada! Agora é só colar (Ctrl+V ou tocar e segurar) logo depois do texto, no mesmo chat.');
+            return;
+          } catch (e) {
+            // navegador não deixou copiar imagem direto (comum fora de
+            // HTTPS) -- mostra a foto numa aba pra copiar/printar na mão
+          }
+        }
+
+        // Fallback: abre a foto numa aba nova -- dá pra clicar com o botão
+        // direito e "Copiar imagem", ou tirar um print da tela.
+        const url = URL.createObjectURL(blob);
+        const aba = window.open(url, '_blank');
+        if (!aba) {
+          // pop-up bloqueado -- baixa o arquivo como último recurso
+          FichaImagem.baixarBlob(blob, FichaImagem.nomeArquivo(DADOS_ALVO_SELECIONADO.nome, 'foto'));
+          alert('Esse navegador não deixa copiar imagem direto nem abrir a aba (pop-up bloqueado). Baixei o arquivo -- é só anexar no WhatsApp.');
+        } else {
+          alert('Esse navegador não deixa copiar a imagem direto. Abri ela numa aba nova -- clique com o botão direito nela e escolha "Copiar imagem" (ou tire um print).');
+        }
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
+      }
+    }
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data" action="/editar_alvo">
-      <input type="hidden" name="id" value="{{ alvo.id }}">
-      <input type="text" name="nome" value="{{ alvo.nome }}" placeholder="nome">
-      <input type="text" name="vulgo" value="{{ alvo.vulgo }}" placeholder="vulgo">
-      <input type="text" name="genitora" value="{{ alvo.genitora }}" placeholder="genitora">
-
-      <select name="faccao" required>
-        <option value="">Selecione a facção</option>
-        {% for fac in ["CV", "PCC", "GDE", "MASSA", "TCP", "ADA", "SEM"] %}
-        <option value="{{ fac }}" {% if alvo.faccao == fac %}selected{% endif %}>{{ fac }}</option>
-        {% endfor %}
-      </select>
-
-      <!-- Município e Bairro dinâmicos -->
-      <label for="municipio">Município:</label>
-      <select name="municipio" id="municipio" onchange="atualizarBairros()" required>
-        <option value="">Selecione</option>
-        <option value="FORTALEZA" {% if alvo.municipio == "FORTALEZA" %}selected{% endif %}>FORTALEZA</option>
-        <option value="CAUCAIA" {% if alvo.municipio == "CAUCAIA" %}selected{% endif %}>CAUCAIA</option>
-        <option value="MARACANAÚ" {% if alvo.municipio == "MARACANAÚ" %}selected{% endif %}>MARACANAÚ</option>
-      </select>
-
-      <label for="bairro">Bairro:</label>
-      <select name="bairro" id="bairro" required>
-        <option value="{{ alvo.bairro }}">{{ alvo.bairro }}</option>
-      </select>
-
-      <textarea name="anotacoes" rows="10" placeholder="anotações">[{{ now }}] 
-⤵️ Digite abaixo a nova anotação...
-
-{{ alvo.anotacoes }}</textarea>
-
-      <input type="text" name="octopus" value="{{ alvo.octopus }}" placeholder="endereço">
-
-      <label for="octopusasint">Octopus Asint:</label>
-<select name="octopusasint" required>
-    <option value="" {% if not alvo.octopusasint %}selected{% endif %}>--octopus--</option> 
-    
-    <option value="NAO" {% if alvo.octopusasint == "NAO" %}selected{% endif %}>NAO</option>
-    
-    <option value="SIM" {% if alvo.octopusasint == "SIM" %}selected{% endif %}>SIM</option>
-</select>
-
-      <input type="file" name="nova_foto" accept="image/*">
-      <button type="submit">💾 salvar alterações</button>
-    </form>
-  </div>
-</div>
-
-<!-- Script para abrir o modal automaticamente -->
-{% if alvo and request.args.get('open_modal') %}
-<script>
-  const abrirModalAutomaticamente = "{{ 'true' if alvo and request.args.get('open_modal') else 'false' }}";
-
-  document.addEventListener('DOMContentLoaded', function () {
-    if (abrirModalAutomaticamente === "true") {
-      abrirModal();
-      atualizarBairros();
-    }
-  });
-</script>
-{% endif %}
-
-<!-- Script para atualizar bairros dinamicamente -->
-<script>
-  const bairrosPorMunicipio = {
-    "FORTALEZA": ["Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
-        "Amadeu Furtado", "Ancuri", "Antônio Bezerra", "Antônio Diogo", "Autran Nunes",
-        "Barra do Ceará", "Barroso", "Bela Vista", "Benfica", "Boa Vista", "Bom Futuro",
-        "Bom Jardim", "Bonsucesso", "Cachoeirinha", "Cais do Porto", "Cajazeiras", "Cambeba",
-        "Canindezinho", "Carlito Pamplona", "Centro", "Cidade 2000", "Cidade dos Funcionários",
-        "Coaçu", "Cocó", "Conjunto Ceará", "Conjunto Esperança", "Conjunto Palmeiras",
-        "Couto Fernandes", "Cristo Redentor", "Curió", "Damas", "De Lourdes", "Demócrito Rocha",
-        "Dendê", "Dias Macedo", "Dionísio Torres", "Dom Lustosa", "Edson Queiroz",
-        "Engenheiro Luciano Cavalcante", "Farias Brito", "Fátima", "Floresta", "Granja Lisboa",
-        "Granja Portugal", "Guajiru", "Henrique Jorge", "Itaoca", "Itaperi", "Jacarecanga",
-        "Jangurussu", "Jardim América", "Jardim Cearense", "Jardim das Oliveiras", "Jardim Guanabara",
-        "Jardim Iracema", "João XXIII", "Joaquim Távora", "Jóquei Clube", "José Bonifácio",
-        "José de Alencar", "Lagoa Redonda", "Manoel Dias Branco", "Manuel Sátiro", "Maraponga",
-        "Meireles", "Messejana", "Mondubim", "Monte Castelo", "Montese", "Moura Brasil",
-        "Mucuripe", "Novo Mondubim", "Olavo Oliveira", "Padre Andrade", "Pan Americano",
-        "Papicu", "Parangaba", "Parque Araxá", "Parque Dois Irmãos", "Parque Genibaú",
-        "Parque Iracema", "Parque Manibura", "Parque Presidente Vargas", "Parque Santa Maria",
-        "Parque Santa Rosa", "Parque São José", "Parquelândia", "Parreão", "Passaré",
-        "Patriolino Ribeiro", "Paupina", "Pedras", "Pici", "Pirambu", "Planalto Ayrton Senna",
-        "Praia de Iracema", "Prefeito José Walter", "Presidente Kennedy", "Quintino Cunha",
-        "Rodolfo Teófilo", "Sabiaguaba", "Salinas", "São Bento", "São Gerardo",
-        "São João do Tauape", "Sapiranga", "Serrinha", "Siqueira", "Varjota", "Vicente Pinzon",
-        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"],
-    "CAUCAIA": ["JUREMA", "TABAPUÁ", "PARQUE SOLEDADE"],
-    "MARACANAÚ": ["JARDIM JATOBÁ", "PAJUÇARA", "CENTRO"]
-  };
-
-  function atualizarBairros() {
-    const municipio = document.getElementById("municipio").value;
-    const bairroSelect = document.getElementById("bairro");
-    bairroSelect.innerHTML = "";
-
-    if (municipio && bairrosPorMunicipio[municipio]) {
-      bairrosPorMunicipio[municipio].forEach(bairro => {
-        const option = document.createElement("option");
-        option.value = bairro;
-        option.textContent = bairro;
-        bairroSelect.appendChild(option);
+    function iniciarCombosDoModal() {
+      inicializarCombosDinamicos({
+        faccaoId: "faccao",
+        municipioId: "municipio",
+        bairroId: "bairro",
+        sufixoExtra: " (cadastrado)",
       });
-    } else {
-      const option = document.createElement("option");
-      option.textContent = "Selecione um município primeiro";
-      bairroSelect.appendChild(option);
     }
-  }
-</script>
 
+    // Comboboxes de filtro na barra de pesquisa (Município -> Bairro).
+    function iniciarCombosDaBusca() {
+      inicializarCombosDinamicos({
+        municipioId: "busca-municipio",
+        bairroId: "busca-bairro",
+      });
+    }
+
+    // Barra de progresso ao pesquisar: puramente visual (não é medição real
+    // do servidor), com mais etapas quando "Nomes parecidos" e/ou "Busca
+    // fonética" estão marcados, já que aí há mais processamento de fato.
+    // Modal com as opções de busca (Nomes parecidos / Busca fonética),
+    // acessível pelo botão "+" ao lado de "Voltar ao menu".
+    function iniciarModalOpcoesBusca() {
+      atualizarBolinhaOpcoesBusca();
+      const checkParecido = document.getElementById("check-nome-parecido");
+      const checkFonetica = document.getElementById("check-fonetica");
+      if (checkParecido) checkParecido.addEventListener("change", atualizarBolinhaOpcoesBusca);
+      if (checkFonetica) checkFonetica.addEventListener("change", atualizarBolinhaOpcoesBusca);
+    }
+
+    function atualizarBolinhaOpcoesBusca() {
+      const botao = document.getElementById("btn-opcoes-busca-toggle");
+      const checkParecido = document.getElementById("check-nome-parecido");
+      const checkFonetica = document.getElementById("check-fonetica");
+      if (!botao) return;
+      const algumaMarcada = (checkParecido && checkParecido.checked) || (checkFonetica && checkFonetica.checked);
+      botao.classList.toggle("tem-opcao-ativa", !!algumaMarcada);
+    }
+
+    function abrirModalOpcoesBusca() {
+      const overlay = document.getElementById("modal-opcoes-busca-overlay");
+      if (overlay) overlay.style.display = "flex";
+    }
+
+    function fecharModalOpcoesBusca() {
+      const overlay = document.getElementById("modal-opcoes-busca-overlay");
+      if (overlay) overlay.style.display = "none";
+    }
+
+    function iniciarBarraProgressoPesquisa() {
+      const form = document.getElementById("form-pesquisa");
+      if (!form) return;
+
+      form.addEventListener("submit", function () {
+        const overlay = document.getElementById("barra-progresso-overlay");
+        const preenchimento = document.getElementById("barra-progresso-preenchimento");
+        const texto = document.getElementById("barra-progresso-texto");
+        if (!overlay || !preenchimento || !texto) return;
+
+        // As caixinhas ficam no cabeçalho (fora do <form>), ligadas a ele
+        // pelo atributo form="form-pesquisa" -- por isso a busca é no
+        // documento inteiro, não só dentro do form.
+        const checkParecido = document.querySelector('input[name="nome_parecido"]');
+        const checkFonetica = document.querySelector('input[name="fonetica"]');
+
+        const etapas = ["Buscando por nome..."];
+        if (checkParecido && checkParecido.checked) etapas.push("Verificando nomes parecidos...");
+        if (checkFonetica && checkFonetica.checked) etapas.push("Aplicando busca fonética...");
+        etapas.push("Organizando resultados...");
+
+        overlay.style.display = "flex";
+        let etapaAtual = 0;
+        const passo = 90 / etapas.length; // guarda os últimos 10% pra quando a página realmente chegar
+
+        texto.textContent = etapas[0];
+        preenchimento.style.width = passo + "%";
+
+        const intervalo = setInterval(function () {
+          etapaAtual++;
+          if (etapaAtual >= etapas.length) {
+            clearInterval(intervalo);
+            return;
+          }
+          texto.textContent = etapas[etapaAtual];
+          preenchimento.style.width = (passo * (etapaAtual + 1)) + "%";
+        }, 450);
+        // Não há necessidade de "terminar" a barra manualmente: quando a
+        // nova página chegar, o navegador troca todo o conteúdo (inclusive
+        // essa barra) automaticamente.
+      });
+    }
+
+    function voltarAosResultados() {
+      const lista = document.getElementById("resultados-lista");
+      const detalhe = document.getElementById("alvo-selecionado");
+      const btnFixo = document.getElementById("btn-voltar-resultados-fixo");
+      const formBusca = document.getElementById("form-pesquisa");
+      if (lista) lista.classList.remove("resultados-oculto");
+      if (formBusca) formBusca.classList.remove("resultados-oculto");
+      if (detalhe) detalhe.style.display = "none";
+      if (btnFixo) btnFixo.style.display = "none";
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    // Marca em vermelho (classe "visto") os alvos já clicados antes -- em
+    // QUALQUER busca, não só na busca atual. Por isso a chave é fixa
+    // (uma lista só, por pessoa), e não muda com o termo/bairro/município.
+    // Continua sendo salvo só no navegador (localStorage), sem servidor.
+    const CHAVE_VISTOS = "siscad_vistos_global";
+
+    function marcarVistosNaLista() {
+      const lista = document.getElementById("resultados-lista");
+      if (!lista) return;
+      let vistos = [];
+      try {
+        vistos = JSON.parse(localStorage.getItem(CHAVE_VISTOS) || "[]");
+      } catch (e) { vistos = []; }
+      lista.querySelectorAll(".resultado-button[data-id]").forEach(function (btn) {
+        if (vistos.includes(btn.dataset.id)) btn.classList.add("visto");
+      });
+    }
+
+    document.addEventListener("submit", function (e) {
+      const form = e.target.closest("[data-resultado-form]");
+      if (!form) return;
+      const id = form.dataset.id;
+      let vistos = [];
+      try {
+        vistos = JSON.parse(localStorage.getItem(CHAVE_VISTOS) || "[]");
+      } catch (err) { vistos = []; }
+      if (!vistos.includes(id)) {
+        vistos.push(id);
+        localStorage.setItem(CHAVE_VISTOS, JSON.stringify(vistos));
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      iniciarCombosDoModal();
+      iniciarCombosDaBusca();
+      marcarVistosNaLista();
+      iniciarBarraProgressoPesquisa();
+      iniciarModalOpcoesBusca();
+      {% if alvo %}
+      configurarAnotacoes({
+        modo: "servidor",
+        pessoaId: {{ alvo.id }},
+        containerId: "anotacoes-lista-modal",
+      });
+      {% endif %}
+      {% if alvo and request.args.get('open_modal') %}
+      abrirModal();
+      {% endif %}
+    });
+  </script>
+
+  <!-- Modal de nova/editar anotação (Data + Tipo + Contexto) -->
+  <div id="modal-anotacao" class="modal-anotacao-overlay">
+    <div class="modal-anotacao-box">
+      <h3 id="anot-modal-titulo">Nova anotação</h3>
+
+      <label for="anot-data">Data</label>
+      <input type="date" id="anot-data">
+
+      <label for="anot-tipo">Tipo</label>
+      <div class="combo-add-row">
+        <select id="anot-tipo">
+          <option value="">Selecione o tipo</option>
+        </select>
+        <button type="button" class="btn-add-opcao" title="Adicionar tipo"
+                onclick="abrirNovaOpcao('crime', 'anot-tipo')">+</button>
+        <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                onclick="editarOpcaoSelecionada('crime', 'anot-tipo')">✏️</button>
+        <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                onclick="excluirOpcaoSelecionada('crime', 'anot-tipo')">🗑️</button>
+      </div>
+
+      <label for="anot-contexto">Contexto</label>
+      <textarea id="anot-contexto" rows="4" placeholder="Cole ou escreva a anotação"></textarea>
+
+      <div class="modal-anotacao-botoes">
+        <button type="button" class="btn-anotacao-cancelar" onclick="fecharModalAnotacao()">Cancelar</button>
+        <button type="button" class="btn-anotacao-salvar" onclick="salvarAnotacaoModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-opcoes-busca-overlay" id="modal-opcoes-busca-overlay" onclick="if (event.target === this) fecharModalOpcoesBusca()">
+    <div class="modal-opcoes-busca-caixa">
+      <h4>Opções de busca</h4>
+      <div class="opcoes-busca">
+        <label class="opcao-busca opcao-parecido">
+          <input type="checkbox" name="nome_parecido" value="1" form="form-pesquisa"
+                 id="check-nome-parecido" {% if nome_parecido %}checked{% endif %}>
+          Nomes parecidos (variações de escrita)
+        </label>
+        <label class="opcao-busca opcao-fonetica">
+          <input type="checkbox" name="fonetica" value="1" form="form-pesquisa"
+                 id="check-fonetica" {% if fonetica %}checked{% endif %}>
+          Busca fonética (mais abrangente)
+        </label>
+      </div>
+      <button type="button" class="btn-fechar-modal-opcoes" onclick="fecharModalOpcoesBusca()">Fechar</button>
+    </div>
+  </div>
 
 </body>
 </html>

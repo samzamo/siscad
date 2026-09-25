@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico de Atividades · SISCAD</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
+    <style>
+        :root {
+            --navy: #16324a;
+            --accent: #2f6690;
+            --bg: #f2f4f7;
+            --card-bg: #ffffff;
+            --border: #dbe2ea;
+            --text: #2b2f36;
+            --text-muted: #6b7280;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            padding: 24px 16px 60px;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+        }
+        .page { max-width: 1000px; margin: 0 auto; }
+        .topo { margin-bottom: 20px; }
+        .topo h2 { margin: 0; font-size: 18px; font-weight: 600; color: var(--navy); }
+        .topo .eyebrow {
+            display: block; font-size: 11px; letter-spacing: 1.5px;
+            text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px;
+        }
+        .btn-voltar-fixo {
+            position: fixed; top: 20px; left: 20px;
+            padding: 9px 16px; background-color: #eceff2; color: var(--text);
+            border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+            font-weight: 600; cursor: pointer; text-decoration: none; z-index: 10;
+        }
+        .btn-voltar-fixo:hover { background-color: #e1e5ea; }
+
+        table {
+            width: 100%; border-collapse: collapse; margin-bottom: 14px;
+            background-color: var(--card-bg); border-radius: 8px; overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        th, td {
+            border-bottom: 1px solid var(--border); padding: 10px 12px;
+            text-align: left; font-size: 13px; vertical-align: middle;
+        }
+        tr:last-child td { border-bottom: none; }
+        th {
+            background-color: var(--navy); color: white; font-weight: 600;
+            font-size: 12px; text-transform: uppercase; letter-spacing: .3px;
+        }
+        .tipo-badge {
+            display: inline-block; padding: 2px 10px; border-radius: 999px;
+            font-size: 12px; font-weight: 600;
+        }
+        .tipo-login { background-color: #e6eef7; color: #2f6690; }
+        .tipo-criado { background-color: #e4f5ea; color: #1f8a4c; }
+        .tipo-editado { background-color: #fff3d6; color: #8a6d1f; }
+        .tipo-mandado { background-color: #f3e6f7; color: #7a2f90; }
+        .detalhes-cell { color: var(--text-muted); font-size: 12px; }
+
+        .paginacao {
+            display: flex; justify-content: center; align-items: center;
+            gap: 12px; font-size: 13px; color: var(--text-muted);
+        }
+        .paginacao a {
+            padding: 7px 14px; border-radius: 6px; border: 1px solid var(--border);
+            background-color: var(--card-bg); color: var(--text); text-decoration: none; font-weight: 600;
+        }
+        .paginacao a:hover { background-color: #eef3f7; }
+        .paginacao .desabilitado { opacity: .4; pointer-events: none; }
+        .vazio { text-align: center; color: var(--text-muted); padding: 30px 0; }
+    </style>
+</head>
+<body>
+    {% include '_nav.html' %}
+    <a href="/menu" class="btn-voltar-fixo">Voltar ao menu</a>
+    <div class="page">
+        <div class="topo">
+            <h2><span class="eyebrow">SISCAD</span>Histórico de Atividades</h2>
+        </div>
+
+        {% if paginacao.items %}
+        <table>
+            <tr>
+                <th>Data/Hora</th>
+                <th>Usuário</th>
+                <th>Ação</th>
+                <th>Alvo</th>
+                <th>Detalhes</th>
+            </tr>
+            {% for log in paginacao.items %}
+            <tr>
+                <td>{{ log.criado_em.strftime('%d/%m/%Y %H:%M') if log.criado_em else '—' }}</td>
+                <td>{{ log.usuario_nome or '—' }}</td>
+                <td>
+                    {% if log.tipo == 'login' %}
+                        <span class="tipo-badge tipo-login">Login</span>
+                    {% elif log.tipo == 'cadastro_criado' %}
+                        <span class="tipo-badge tipo-criado">Cadastro criado</span>
+                    {% elif log.tipo == 'cadastro_editado' %}
+                        <span class="tipo-badge tipo-editado">Cadastro editado</span>
+                    {% elif log.tipo == 'mandado_importado' %}
+                        <span class="tipo-badge tipo-mandado">Mandado importado</span>
+                    {% else %}
+                        <span class="tipo-badge">{{ log.tipo }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ log.pessoa_nome or '—' }}</td>
+                <td class="detalhes-cell">{{ log.detalhes or '' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <div class="paginacao">
+            <a href="{{ url_for('historico', pagina=paginacao.prev_num) }}" class="{{ 'desabilitado' if not paginacao.has_prev }}">‹ Anterior</a>
+            <span>Página {{ paginacao.page }} de {{ paginacao.pages or 1 }}</span>
+            <a href="{{ url_for('historico', pagina=paginacao.next_num) }}" class="{{ 'desabilitado' if not paginacao.has_next }}">Próxima ›</a>
+        </div>
+        {% else %}
+        <p class="vazio">Nenhuma atividade registrada ainda.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

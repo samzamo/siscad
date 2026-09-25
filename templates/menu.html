@@ -3,65 +3,110 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Menu Principal</title>
+  <title>Menu Principal · SISCAD</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
   <style>
+    :root {
+      --navy: #16324a;
+      --navy-dark: #0f2436;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
+      --danger: #c0392b;
+    }
+    * { box-sizing: border-box; }
     body {
-      background-color: #c6f6ff;
-      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       text-align: center;
-      padding: 20px;
+      padding: 24px 16px;
+      color: var(--text);
+      margin: 0;
     }
 
-    h2 {
-      margin-bottom: 30px;
-      font-size: 24px;
-    }
+    .form-wrapper { display: flex; justify-content: center; }
 
     .form-container {
-      background-color: #fff;
-      padding: 30px;
+      background-color: var(--card-bg);
       border-radius: 10px;
       display: inline-block;
-      box-shadow: 0 0 10px #aaa;
-      max-width: 800px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 12px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+      max-width: 820px;
       width: 100%;
+      overflow: hidden;
     }
+
+    .card-header {
+      background-color: var(--navy);
+      color: #fff;
+      padding: 18px 24px;
+    }
+    .card-header .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9db3c4;
+      margin-bottom: 4px;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .card-body { padding: 24px; }
 
     .button-grid {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .button-grid form,
     .button-grid .link-button {
-      flex: 1 1 180px;
-      max-width: 180px;
+      flex: 1 1 170px;
+      max-width: 170px;
     }
 
     button,
     .link-button a {
       width: 100%;
-      padding: 12px 16px;
-      border: none;
-      border-radius: 8px;
-      background-color: #0090ff;
-      color: #fff;
-      font-weight: bold;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background-color: #f7f9fb;
+      color: var(--navy);
+      font-weight: 600;
       cursor: pointer;
-      font-size: 16px;
+      font-size: 13px;
       box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: center;
       text-decoration: none;
+      transition: background-color .15s ease, border-color .15s ease;
     }
 
     button:hover,
     .link-button a:hover {
-      background-color: #0070cc;
+      background-color: #eef3f7;
+      border-color: var(--accent);
+    }
+
+    .button-grid form:last-child button {
+      background-color: #fdecea;
+      color: var(--danger);
+      border-color: #f5c6c1;
+    }
+    .button-grid form:last-child button:hover {
+      background-color: #fbe0dd;
     }
 
     button i,
@@ -69,30 +114,32 @@
       margin-right: 8px;
     }
 
+    .total-footer {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 18px 0;
+      font-weight: 600;
+    }
+
     .mapa-container {
-      max-width: 800px;
-      margin: 30px auto;
+      max-width: 820px;
+      margin: 0 auto 20px;
       border-radius: 10px;
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
     @media (max-width: 600px) {
-      body {
-        padding: 10px;
-      }
+      body { padding: 14px 8px; }
 
-      h2 {
-        font-size: 20px;
-      }
-
-      .form-container {
-        padding: 15px;
-      }
+      .card-header { padding: 14px 18px; }
+      .card-body { padding: 16px; }
 
       .button-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        gap: 8px;
         justify-content: center;
       }
 
@@ -103,9 +150,8 @@
 
       button,
       .link-button a {
-        font-size: 15px;
-        padding: 10px;
-        border-radius: 6px;
+        font-size: 12px;
+        padding: 10px 6px;
       }
 
       button i,
@@ -116,82 +162,94 @@
   </style>
 </head>
 <body>
+  {% include '_nav.html' %}
   <div class="form-wrapper">
     <div class="form-container">
-      <h2>Menu Principal</h2>
-      <div class="button-grid">
-        <form action="/cadastro_alvo">
-          <button type="submit"><i class="fas fa-user-plus"></i> cadastrar</button>
-        </form>
+      <div class="card-header">
+        <span class="eyebrow">SISCAD</span>
+        <h2>Menu Principal</h2>
+      </div>
 
-        <form action="/pesquisar_alvo">
-          <button type="submit"><i class="fas fa-search"></i> pesquisar</button>
-        </form>
+      <div class="card-body">
+        <div class="button-grid">
+          <form action="/cadastro_alvo">
+            <button type="submit"><i class="fas fa-user-plus"></i> Cadastrar</button>
+          </form>
 
-        <form action="/comparador">
-          <button type="submit"><i class="fas fa-images"></i> Comparar</button>
-        </form>
+          <form action="/mandado/importar">
+            <button type="submit"><i class="fas fa-file-import"></i> Importar Mandado</button>
+          </form>
 
-        <!-- Botão Mandados -->
-        <div class="link-button">
-          <a href="{{ url_for('mandados') }}"><i class="fas fa-map-marker-alt"></i> Mandados</a>
+          <form action="/pesquisar_alvo">
+            <button type="submit"><i class="fas fa-search"></i> Pesquisar</button>
+          </form>
+
+          <div class="link-button">
+            <a href="{{ url_for('mandados') }}"><i class="fas fa-map-marker-alt"></i> Mandados</a>
+          </div>
+
+          {% if is_moderador or is_admin %}
+            <form action="/estatisticas">
+              <button type="submit"><i class="fas fa-chart-bar"></i> Octopus</button>
+            </form>
+
+            <form action="/pesquisa_vinculo">
+              <button type="submit"><i class="fas fa-link"></i> Pesq. Vínculo</button>
+            </form>
+
+            <form action="/pesquisa_lotes">
+              <button type="submit"><i class="fas fa-link"></i> Pesq. Lote</button>
+            </form>
+
+            <form action="/busca_reversa" method="get">
+              <button type="submit"><i class="fas fa-exchange-alt"></i> Busc. Anotação</button>
+            </form>
+          {% endif %}
+
+          {% if is_admin %}
+            <form action="/dashboard">
+              <button type="submit"><i class="fas fa-chart-column"></i> Dashboard</button>
+            </form>
+
+            <form action="/gerenciar_usuarios">
+              <button type="submit"><i class="fas fa-user-cog"></i> Gerenciar</button>
+            </form>
+
+            <form action="/visualizar_todos">
+              <button type="submit"><i class="fas fa-users"></i> Todos Cadast.</button>
+            </form>
+
+            <form action="/relatorio">
+              <button type="submit"><i class="fas fa-file-alt"></i> Cadastro/Usuário</button>
+            </form>
+
+            <form action="/novos_cadastros">
+              <button type="submit"><i class="fas fa-clock"></i> Últ. Inseridos</button>
+            </form>
+          {% endif %}
+
+          {% if pode_ver_historico_menu %}
+            <form action="/historico">
+              <button type="submit"><i class="fas fa-user-clock"></i> Histórico</button>
+            </form>
+          {% endif %}
+
+          <form action="/logout">
+            <button type="submit"><i class="fas fa-sign-out-alt"></i> Sair</button>
+          </form>
         </div>
-
-        {% if is_moderador or is_admin %}
-          <form action="/estatisticas">
-            <button type="submit"><i class="fas fa-chart-bar"></i> octopus</button>
-          </form>
-
-          <form action="/pesquisa_vinculo">
-            <button type="submit"><i class="fas fa-link"></i> Pesq. Vínculo</button>
-          </form>
-
-          <form action="/pesquisa_lotes">
-            <button type="submit"><i class="fas fa-link"></i> Pesq. lote</button>
-          </form>
-
-          <form action="/busca_reversa" method="get">
-            <button type="submit"><i class="fas fa-exchange-alt"></i> busc. Anotação</button>
-          </form>
-        {% endif %}
-
-        {% if is_admin %}
-          <form action="/dashboard">
-            <button type="submit"><i class="fas fa-chart-column"></i> dashboard</button>
-          </form>
-
-          <form action="/gerenciar_usuarios">
-            <button type="submit"><i class="fas fa-user-cog"></i> gerenciar</button>
-          </form>
-
-          <form action="/visualizar_todos">
-            <button type="submit"><i class="fas fa-users"></i> todos cadast.</button>
-          </form>
-
-          <form action="/relatorio">
-            <button type="submit"><i class="fas fa-file-alt"></i> cadastro/usuário</button>
-          </form>
-
-          <form action="/novos_cadastros">
-            <button type="submit"><i class="fas fa-clock"></i> ult. inseridos</button>
-          </form>
-        {% endif %}
-
-        <form action="/logout">
-          <button type="submit"><i class="fas fa-sign-out-alt"></i> sair</button>
-        </form>
       </div>
     </div>
   </div>
 
-  <h3 style="text-align:center">Total de alvos cadastrados: {{ total }}</h3>
+  <p class="total-footer">Total de alvos cadastrados: {{ total }}</p>
 
   <div class="mapa-container">
-    <iframe 
-      src="https://www.google.com/maps/d/embed?mid=1v0LNlxW4r3aY7XhPICRRY5hQ498pbwo" 
-      width="100%" 
-      height="350" 
-      style="border:0;" 
+    <iframe
+      src="https://www.google.com/maps/d/embed?mid=1v0LNlxW4r3aY7XhPICRRY5hQ498pbwo"
+      width="100%"
+      height="350"
+      style="border:0;"
       allowfullscreen>
     </iframe>
   </div>

@@ -22,10 +22,8 @@
             align-items: center;
             gap: 15px;
         }
-        .map-wrapper { width: 100%; height: 450px; border: 1px solid #ccc; border-radius: 8px; margin-bottom: 20px; }
-        .map-wrapper iframe { width: 100%; height: 100%; border: none; }
-        .filters { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
         .map-icon { margin-left: 6px; color: #007bff; }
+        .filters { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
         #filtro-data { flex: 0.5; min-width: 120px; }
         #filtro-tipificacao { flex: 1; min-width: 160px; }
         #filtro-nome { flex: 2; min-width: 220px; }
@@ -33,18 +31,12 @@
         .nome-verde { color: #198754; font-weight: 600; }
         .nome-vermelho { color: #dc3545; font-weight: 600; }
         .x-vermelho { color: #dc3545 !important; font-weight: bold; }
-        .upload-form input[type="file"] { width: 140px; padding: 4px; font-size: 14px; }
-        .upload-form input[type="password"] { width: 120px; padding: 4px; font-size: 14px; }
-        .upload-form button { padding: 6px 12px; font-size: 14px; }
         @media (max-width: 768px) {
             .titulo-caixa { font-size: 20px; flex-direction: column; align-items: flex-start; }
-            .map-wrapper { height: 300px; }
             table { font-size: 12px; }
             .filters { flex-direction: column; }
             #filtro-data { width: 70%; }
             #filtro-tipificacao, #filtro-nome { width: 100%; }
-            .upload-form { flex-direction: column; }
-            .upload-form input[type="file"], .upload-form input[type="password"] { width: 100%; }
         }
     </style>
 </head>
@@ -54,11 +46,6 @@
         <div class="titulo-caixa">
             <a href="{{ url_for('menu_principal') }}" class="btn btn-light text-dark">Voltar ao Menu</a>
             <div>Mandados de Prisão AIS 06</div>
-        </div>
-
-        <!-- Mapa -->
-        <div class="map-wrapper">
-            <iframe src="https://www.google.com/maps/d/u/0/embed?mid=12SABAYGoMvsxbf9YxTRqOQdmsZVJvdE&ehbc=2E312F&noprof=1" allowfullscreen loading="lazy"></iframe>
         </div>
 
         <!-- Filtros -->
@@ -78,12 +65,13 @@
             <table id="tabela" class="table table-bordered table-striped table-hover">
                 <thead class="table-dark">
                     <tr>
+                        <th>Data</th>
+                        <th>Tipo de Crime</th>
                         <th>Nome</th>
                         <th>Genitora</th>
-                        <th>Tipificação</th>
-                        <th>Data Mandato</th>
                         <th>Endereço</th>
                         <th>Status</th>
+                        <th>Ação</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -93,6 +81,8 @@
                                          else 'nome-vermelho' if item.status == 'vermelho'
                                          else '' %}
                     <tr data-id="{{ item.id }}" data-nome="{{ item.nome }}" data-tipificacao="{{ item.tipificacao }}" data-data="{{ item.data[:10] }}">
+                        <td>{{ partes[2] }}/{{ partes[1] }}/{{ partes[0] }}</td>
+                        <td>{{ item.tipificacao }}</td>
                         <td class="nome-cell {{ classe_status }}">
                             {% if item.status == 'verde' %}
                                 <span style="color:#198754;font-weight:bold;">✔</span>
@@ -102,8 +92,6 @@
                             {{ item.nome }}
                         </td>
                         <td>{{ item.genitora }}</td>
-                        <td>{{ item.tipificacao }}</td>
-                        <td>{{ partes[2] }}/{{ partes[1] }}/{{ partes[0] }}</td>
                         <td>
                             {{ item.endereco }}
                             <a href="https://www.google.com/maps/search/{{ item.endereco | urlencode }}" target="_blank">
@@ -112,10 +100,15 @@
                         </td>
                         <td>
                             <select class="form-select form-select-sm escolha-status">
-                                <option value="">Selecione...</option>
+                                <option value="" {% if not item.status or item.status == 'neutro' %}selected{% endif %}>Vazio</option>
                                 <option value="verde" {% if item.status == 'verde' %}selected{% endif %}>✔ Verificado</option>
                                 <option value="vermelho" {% if item.status == 'vermelho' %}selected{% endif %}>✖ Não verificado</option>
                             </select>
+                        </td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-outline-danger btn-excluir-mandado" title="Excluir mandado">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -123,15 +116,6 @@
             </table>
         </div>
 
-        <!-- Upload -->
-        <div class="mt-4">
-            <h5>Renovar Mandados</h5>
-            <form class="upload-form d-flex gap-2 flex-wrap" method="POST" action="{{ url_for('mandados') }}" enctype="multipart/form-data" onsubmit="return validarSenha()">
-                <input type="password" id="senha" class="form-control" placeholder="Senha" required>
-                <input type="file" name="arquivo" class="form-control" required>
-                <button type="submit" class="btn btn-primary">Renovar</button>
-            </form>
-        </div>
     </div>
 
     <!-- Scripts -->
@@ -158,15 +142,6 @@
         document.getElementById("filtro-tipificacao").addEventListener("change", aplicarFiltros);
         document.getElementById("filtro-data").addEventListener("change", aplicarFiltros);
 
-        // Validação da senha
-        function validarSenha() {
-            const senha = document.getElementById("senha").value;
-            if (senha !== "mandado") {
-                alert("Senha incorreta. Tente novamente.");
-                return false;
-            }
-            return true;
-        }
 
                 // Atualização de status + mover linha para o final
         document.addEventListener("change", async (e) => {
@@ -206,6 +181,37 @@
                 }
             } catch {
                 alert("Erro de conexão ao atualizar o status.");
+            }
+        });
+        // Exclusão de mandado
+        document.addEventListener("click", async (e) => {
+            const botao = e.target.closest(".btn-excluir-mandado");
+            if (!botao) return;
+
+            const linha = botao.closest("tr");
+            const id = parseInt(linha.dataset.id);
+
+            if (!confirm(`Excluir o mandado de "${linha.dataset.nome}"? Essa ação não pode ser desfeita.`)) return;
+
+            botao.disabled = true;
+
+            try {
+                const respHttp = await fetch("/mandados/excluir", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ id })
+                });
+                const resp = await respHttp.json().catch(() => ({}));
+
+                if (respHttp.ok && resp.ok) {
+                    linha.remove();
+                } else {
+                    alert((resp && resp.erro) || "Não foi possível excluir o mandado.");
+                    botao.disabled = false;
+                }
+            } catch {
+                alert("Erro de conexão ao excluir o mandado.");
+                botao.disabled = false;
             }
         });
     </script>

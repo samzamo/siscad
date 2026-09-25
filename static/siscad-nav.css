@@ -1,0 +1,220 @@
+/* ===== SISCAD - estilos compartilhados: navegação fixa, tipografia e paginação ===== */
+:root {
+  --navy: #16324a;
+  --navy-dark: #0f2436;
+  --accent: #2f6690;
+  --bg: #f2f4f7;
+  --card-bg: #ffffff;
+  --border: #dbe2ea;
+  --text: #2b2f36;
+  --text-muted: #6b7280;
+  --danger: #c0392b;
+  --danger-dark: #a5301f;
+  --success: #1f8a4c;
+  --highlight-bg: #fff3b0;
+  --highlight-text: #6b5900;
+  --nav-h: 56px;
+}
+
+/* ---- Tipografia padronizada (aplica-se onde a página não define o próprio estilo) ---- */
+/* Nota: cor NÃO é forçada aqui de propósito — várias páginas usam títulos
+   brancos dentro de cabeçalhos com fundo navy (.card-header). Forçar a cor
+   no seletor genérico h1-h4 faria esse texto virar navy-sobre-navy. */
+body { line-height: 1.5; }
+h1 { font-size: 20px; font-weight: 700; }
+h2 { font-size: 17px; font-weight: 600; }
+h3 { font-size: 15px; font-weight: 600; }
+h4 {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px;
+}
+label {
+  font-size: 12px; font-weight: 600; letter-spacing: .3px;
+  color: var(--text-muted); text-transform: uppercase;
+}
+
+/* ---- Navegação fixa (sticky: ocupa espaço normal e gruda ao rolar) ---- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: var(--nav-h);
+  background-color: var(--navy);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+}
+.topbar .brand {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: .5px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #fff;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.topbar .brand .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.topbar .user-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.topbar .user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ff6b5e;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.topbar .user-name:hover { color: #ff8c80; }
+.topbar .btn-sair {
+  background-color: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.18);
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.topbar .btn-sair:hover { background-color: rgba(255,255,255,0.16); }
+
+@media (max-width: 420px) {
+  .topbar .user-name { display: none; }
+}
+
+/* ---- Barra secundária: botão padronizado "Voltar ao Menu" ---- */
+.subbar {
+  background-color: var(--bg);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: flex-start;
+  border-bottom: 1px solid var(--border);
+}
+.btn-voltar-menu {
+  background-color: var(--card-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color .15s ease;
+}
+.btn-voltar-menu:hover { background-color: #e1e5ea; }
+
+/* ---- Paginação client-side compartilhada ---- */
+.pg-controls {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.pg-controls button {
+  background-color: #eceff2;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pg-controls button:hover:not(:disabled) { background-color: #e1e5ea; }
+.pg-controls button:disabled { opacity: .45; cursor: default; }
+.pg-controls .pg-info { font-weight: 600; }
+
+/* ---- Modal "Configurações da conta" ---- */
+.siscad-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 36, 54, 0.55);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.siscad-modal-overlay.aberto { display: flex; }
+.siscad-modal {
+  background: var(--card-bg);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 360px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.25);
+}
+.siscad-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.siscad-modal-header h3 { margin: 0; font-size: 15px; color: var(--text); }
+.siscad-modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.siscad-field { margin-bottom: 12px; text-align: left; }
+.siscad-field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+.siscad-field input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+  color: var(--text);
+}
+.siscad-modal hr { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+.siscad-modal-msg { font-size: 12px; margin-bottom: 10px; min-height: 14px; }
+.siscad-modal-msg.erro { color: var(--danger); }
+.siscad-modal-msg.sucesso { color: var(--success); }
+.siscad-modal-submit {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 7px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+.siscad-modal-submit:hover { background: var(--navy-dark); }

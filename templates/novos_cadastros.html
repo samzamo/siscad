@@ -2,118 +2,213 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Últimos Cadastros</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Últimos Cadastros · SISCAD</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
   <style>
+    :root {
+      --navy: #16324a;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
+    }
+    * { box-sizing: border-box; }
     body {
-      background-color: #f0f8ff;
-      font-family: Arial, sans-serif;
-      padding: 30px;
+      background-color: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      padding: 24px 16px 60px;
+      text-align: center;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .page { max-width: 1000px; margin: 0 auto; }
+
+    .card-header {
+      background-color: var(--navy);
+      color: #fff;
+      padding: 18px 24px;
+      border-radius: 10px 10px 0 0;
       text-align: center;
     }
-    h2 {
-      font-size: 28px;
-      margin-bottom: 20px;
-      color: #0055aa;
+    .card-header .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9db3c4;
+      margin-bottom: 4px;
     }
-    form {
-      margin-bottom: 20px;
+    .card-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+
+    .card-body {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 10px 10px;
+      padding: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+
+    form.filtro {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+    }
+    form.filtro label {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
     }
     input[type="number"] {
       padding: 8px;
-      font-size: 16px;
+      font-size: 14px;
       width: 80px;
       text-align: center;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background-color: #fbfcfd;
+    }
+    input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47,102,144,0.12);
+      background-color: #fff;
     }
     button {
       padding: 8px 16px;
-      font-size: 16px;
-      margin-left: 10px;
-      background-color: #0090ff;
+      font-size: 13px;
+      font-weight: 600;
+      background-color: var(--accent);
       color: white;
       border: none;
       border-radius: 6px;
       cursor: pointer;
     }
-    button:hover {
-      background-color: #0077cc;
+    button:hover { background-color: #24506f; }
+
+    .total-info {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
     }
+    .total-info strong { color: var(--text); }
+
     table {
-      margin: auto;
+      margin: 0 auto;
       border-collapse: collapse;
-      width: 95%;
-      max-width: 1000px;
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
-      font-size: 16px;
+      border-bottom: 1px solid var(--border);
+      padding: 9px 12px;
+      font-size: 13px;
+      text-align: left;
     }
+    tr:last-child td { border-bottom: none; }
     th {
-      background-color: #0055aa;
+      background-color: var(--navy);
       color: white;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      font-weight: 600;
     }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
+    tr:nth-child(even) td { background-color: #f7f9fb; }
+
+    .btn-visualizar {
+      background-color: #eef3f7;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 600;
     }
+    .btn-visualizar:hover { background-color: #dfe9f0; }
+
     .botao-voltar {
-      margin-top: 30px;
-      padding: 10px 20px;
-      background-color: #ccc;
-      color: #000;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      margin-top: 20px;
+      padding: 9px 18px;
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
     }
-    .botao-voltar:hover {
-      background-color: #aaa;
-    }
+    .botao-voltar:hover { background-color: #e1e5ea; }
   </style>
 </head>
 <body>
-  <h2>📋 Últimos Cadastros</h2>
+  {% include '_nav.html' %}
+  <div class="page">
+    <div class="card-header">
+      <span class="eyebrow">SISCAD</span>
+      <h2>Últimos Cadastros</h2>
+    </div>
 
-  <form method="POST">
-    <label for="dias">Mostrar últimos</label>
-    <input type="number" name="dias" id="dias" value="{{ dias }}" min="1">
-    <label>dias</label>
-    <button type="submit">Filtrar</button>
-  </form>
+    <div class="card-body">
+      <form method="POST" class="filtro">
+        <label for="dias">Mostrar últimos</label>
+        <input type="number" name="dias" id="dias" value="{{ dias }}" min="1">
+        <label>dias</label>
+        <button type="submit">Filtrar</button>
+      </form>
 
-  <p><strong>Total de cadastros encontrados:</strong> {{ total }}</p>
+      <p class="total-info"><strong>Total de cadastros encontrados:</strong> {{ total }}</p>
 
-  <table>
-    <tr>
-      <th>Usuário</th>
-      <th>Nome</th>
-      <th>Vulgo</th>
-      <th>Data</th>
-      <th>Ação</th>
-    </tr>
-    {% for pessoa in recentes %}
-    <tr>
-      <td>{{ pessoa.usuario.username }}</td>
-      <td>{{ pessoa.nome }}</td>
-      <td>{{ pessoa.vulgo }}</td>
-      <td>
-        {% if pessoa.data_criacao %}
-          {{ pessoa.data_criacao.strftime('%d/%m/%Y %H:%M') }}
-        {% else %}
-          —
-        {% endif %}
-      </td>
-      <td>
-        <form action="/pesquisar_alvo" method="GET">
-          <input type="hidden" name="id" value="{{ pessoa.id }}">
-          <button type="submit">🔍 Visualizar</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+      <table id="tabela-recentes">
+        <tr>
+          <th>Usuário</th>
+          <th>Nome</th>
+          <th>Vulgo</th>
+          <th>Data</th>
+          <th>Ação</th>
+        </tr>
+        {% for pessoa in recentes %}
+        <tr class="pg-row">
+          <td>{{ pessoa.usuario.username }}</td>
+          <td>{{ pessoa.nome }}</td>
+          <td>{{ pessoa.vulgo }}</td>
+          <td>
+            {% if pessoa.data_criacao %}
+              {{ pessoa.data_criacao.strftime('%d/%m/%Y %H:%M') }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>
+            <form action="/pesquisar_alvo" method="GET" style="margin:0;">
+              <input type="hidden" name="id" value="{{ pessoa.id }}">
+              <button type="submit" class="btn-visualizar">Visualizar</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </table>
+      <div class="pg-controls" id="pg-recentes">
+        <button type="button" class="pg-prev">‹ Anterior</button>
+        <span class="pg-info"></span>
+        <button type="button" class="pg-next">Próxima ›</button>
+      </div>
+    </div>
+  </div>
 
-  <form action="/menu">
-    <button type="submit" class="botao-voltar">⬅️ Voltar ao Menu</button>
-  </form>
+  <script src="{{ url_for('static', filename='siscad-shared.js') }}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      paginarLista('#tabela-recentes', 'tr.pg-row', 10, '#pg-recentes');
+    });
+  </script>
 </body>
 </html>

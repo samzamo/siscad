@@ -2,80 +2,124 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Painel Criminal</title>
+  <title>Painel Criminal · SISCAD</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f0faff;
-      padding: 40px;
+    :root {
+      --navy: #16324a;
+      --navy-dark: #0f2436;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      background-color: var(--bg);
+      padding: 28px 16px;
+      color: var(--text);
+      margin: 0;
     }
 
     .topo {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 30px;
+      max-width: 1000px;
+      margin: 0 auto 22px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .topo h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--navy);
+      margin: 0;
+    }
+    .topo .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 3px;
     }
 
     .btn-voltar {
-      padding: 10px 20px;
-      background-color: #0077cc;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
+      padding: 9px 16px;
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
       cursor: pointer;
       text-decoration: none;
+      transition: background-color .15s ease;
     }
+    .btn-voltar:hover { background-color: #e1e5ea; }
 
     .filtros {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 15px;
-      margin-bottom: 20px;
+      gap: 10px;
+      margin-bottom: 18px;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
     }
 
     .filtros label {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 16px;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      cursor: pointer;
     }
 
     .total-cadastros {
       text-align: center;
-      font-size: 18px;
-      margin-bottom: 20px;
-      font-weight: bold;
-      color: #333;
+      font-size: 14px;
+      margin-bottom: 18px;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
     .grafico-card {
-      background: white;
+      background: var(--card-bg);
       padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
       max-width: 1000px;
       margin: 0 auto;
     }
 
-    canvas {
-      max-width: 100%;
+    canvas { max-width: 100%; }
+
+    @media (max-width: 600px) {
+      body { padding: 18px 10px; }
+      .topo { flex-direction: column; align-items: flex-start; }
     }
   </style>
 </head>
 <body>
+  {% include '_nav.html' %}
 
   <div class="topo">
-    <h1>📊 Cadastros por Bairro e Facção</h1>
-    <a href="/menu" class="btn-voltar">← Voltar ao Menu</a>
+    <h1><span class="eyebrow">SISCAD</span>Cadastros por Bairro e Facção</h1>
   </div>
 
   <div class="filtros">
@@ -108,13 +152,13 @@
     let chart;
 
     const faccaoColors = {
-      CV: '#ff4d4d',
-      PCC: '#4d94ff',
-      GDE: '#ffcc00',
-      AQ: '#66cc99',
-      ADA: '#9966ff',
-      MASSA: '#ff9900',
-      SEM: '#999999'
+      CV: '#c0392b',
+      PCC: '#2f6690',
+      GDE: '#d4a017',
+      AQ: '#1f8a4c',
+      ADA: '#6c5ce7',
+      MASSA: '#e07b39',
+      SEM: '#8f9aa5'
     };
 
     function atualizarGrafico() {
@@ -124,7 +168,6 @@
 
       const bairros = dados.bairros;
 
-      // Soma total de cadastros das facções selecionadas
       let totalCadastros = 0;
       const somaPorBairro = bairros.map((_, idx) => {
         return selecionadas.reduce((total, faccao) => {
@@ -183,7 +226,6 @@
         });
       }
 
-      // Se não houver facções selecionadas, limpa o gráfico
       if (selecionadas.length === 0 && chart) {
         chart.data.labels = [];
         chart.data.datasets = [];

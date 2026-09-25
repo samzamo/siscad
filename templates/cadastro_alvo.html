@@ -2,94 +2,289 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
-  <title>Cadastro de Alvo</title>
+  <title>Cadastro de Alvo · SISCAD</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
   <style>
-    /* Estilos mantidos iguais */
+    :root {
+      --navy: #16324a;
+      --navy-dark: #0f2436;
+      --accent: #2f6690;
+      --bg: #f2f4f7;
+      --card-bg: #ffffff;
+      --border: #dbe2ea;
+      --text: #2b2f36;
+      --text-muted: #6b7280;
+      --danger: #c0392b;
+      --danger-dark: #a5301f;
+    }
     * { box-sizing: border-box; }
     body {
-      background-color: #b6ffe7;
-      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       margin: 0; padding: 0;
+      color: var(--text);
     }
     .form-wrapper {
       display: flex; justify-content: center;
-      align-items: center; padding: 30px;
+      align-items: flex-start; padding: 30px 16px;
     }
     .form-container {
-      background-color: #fcfcfc;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 500px;
+      background-color: var(--card-bg);
+      border-radius: 10px;
+      max-width: 900px;
       width: 100%;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 12px rgba(0,0,0,0.05);
+      overflow: hidden;
+      border: 1px solid var(--border);
     }
-    h2, h3 { text-align: center; margin-top: 0; }
+    .btn-voltar-fixo {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 9px 16px;
+      background-color: #eceff2;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      z-index: 10;
+    }
+    .btn-voltar-fixo:hover { background-color: #e1e5ea; }
+    .card-header {
+      background-color: var(--navy);
+      color: #fff;
+      padding: 18px 24px;
+      text-align: center;
+    }
+    .linha-nome-cadtex { display: flex; gap: 8px; align-items: stretch; }
+    .linha-nome-cadtex input { flex: 1 1 auto; width: auto; min-width: 0; }
+    .btn-cad-tex {
+      flex: 0 0 auto;
+      width: auto;
+      padding: 0 14px;
+      background-color: #eceff2;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-cad-tex:hover { background-color: #e1e5ea; }
+    .card-header .eyebrow {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #9db3c4;
+      margin-bottom: 4px;
+    }
+    .card-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .card-body { padding: 28px 32px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 20px;
+    }
+    .field-group { margin-bottom: 14px; text-align: left; }
+    .field-group.full { grid-column: 1 / -1; }
+    .field-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .3px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
     input, select, textarea {
-      width: 100%; padding: 10px;
-      margin: 8px 0; border-radius: 8px;
-      border: 1px solid #aaa;
-      font-size: 16px;
+      width: 100%; padding: 9px 11px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text);
+      background-color: #fbfcfd;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47,102,144,0.12);
+      background-color: #fff;
+    }
+    textarea { resize: vertical; }
+    .combo-add-row { display: flex; gap: 6px; align-items: stretch; }
+    .combo-add-row select { flex: 1; }
+    .btn-add-opcao {
+      width: 40px; padding: 0; flex-shrink: 0;
+      border-radius: 6px; border: 1px solid var(--border);
+      background-color: #eceff2; color: var(--navy);
+      font-size: 18px; font-weight: 700; line-height: 1; cursor: pointer;
+    }
+    .btn-add-opcao:hover { background-color: #dfe4e9; }
+    .hint {
+      font-size: 12px;
+      margin-top: 4px;
+      min-height: 16px;
+      font-weight: 500;
     }
     button {
-      width: 100%; padding: 12px;
-      margin-top: 10px;
-      border-radius: 8px; border: none;
-      background-color: #0e93ec;
-      color: white; font-weight: bold;
-      font-size: 16px; cursor: pointer;
+      width: 100%; padding: 11px;
+      border-radius: 6px; border: none;
+      font-weight: 600;
+      font-size: 14px; cursor: pointer;
+      transition: background-color .15s ease;
     }
-    button:hover { background-color: #007dd2; }
+    .btn-primary { background-color: var(--accent); color: #fff; margin-top: 6px; max-width: 320px; margin-left: auto; margin-right: auto; display: block; }
+    .btn-primary:hover { background-color: #24506f; }
+    .btn-secondary { background-color: #eceff2; color: var(--text); border: 1px solid var(--border); margin-top: 10px; max-width: 320px; margin-left: auto; margin-right: auto; display: block; }
+    .btn-secondary:hover { background-color: #e1e5ea; }
+    .footer-note {
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 14px 0 26px;
+    }
+    .alert {
+      background-color: #fdecea;
+      color: var(--danger-dark);
+      border: 1px solid #f5c6c1;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      grid-column: 1 / -1;
+    }
+    .foto-dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 22px 16px;
+      text-align: center;
+      cursor: pointer;
+      background-color: #fbfcfd;
+      transition: border-color .15s ease, background-color .15s ease;
+    }
+    .linha-foto-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .btn-colar-foto {
+      width: auto;
+      padding: 5px 10px;
+      background-color: #eceff2;
+      color: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-colar-foto:hover { background-color: #e1e5ea; }
+    .foto-status-piscando {
+      animation: foto-status-piscar 1s ease-in-out infinite;
+      font-weight: 600;
+    }
+    @keyframes foto-status-piscar {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.25; }
+    }
+    .barra-salvando-track {
+      position: relative;
+      background-color: #eceff2;
+      border-radius: 6px;
+      overflow: hidden;
+      height: 8px;
+    }
+    .barra-salvando-fill {
+      position: absolute;
+      top: 0; left: -40%;
+      height: 100%;
+      width: 40%;
+      background-color: var(--accent);
+      border-radius: 6px;
+      animation: barra-salvando-mover 1.1s ease-in-out infinite;
+    }
+    @keyframes barra-salvando-mover {
+      0% { left: -40%; }
+      100% { left: 100%; }
+    }
+    .foto-dropzone:hover,
+    .foto-dropzone:focus-visible {
+      border-color: var(--accent);
+      outline: none;
+    }
+    .foto-dropzone.dragover {
+      border-color: var(--accent);
+      background-color: rgba(47,102,144,0.06);
+    }
+    .foto-dropzone-texto {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .foto-dropzone-link {
+      color: var(--accent);
+      font-weight: 600;
+      text-decoration: underline;
+    }
+    .foto-preview {
+      display: block;
+      max-width: 100%;
+      max-height: 220px;
+      margin: 0 auto 10px;
+      border-radius: 6px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.15);
+    }
+    .foto-remover {
+      width: auto;
+      padding: 6px 14px;
+      font-size: 12px;
+      background-color: #eceff2;
+      color: var(--danger-dark);
+      border: 1px solid var(--border);
+    }
+    .foto-remover:hover { background-color: #fdecea; }
+    @media screen and (max-width: 720px) {
+      .form-grid { grid-template-columns: 1fr; }
+    }
     @media screen and (max-width: 600px) {
-      .form-wrapper { padding: 20px; }
-      .form-container { padding: 20px; }
-      input, select, textarea, button { font-size: 14px; }
-      h2, h3 { font-size: 18px; }
+      .form-wrapper { padding: 16px 10px; }
+      .card-body { padding: 18px; }
+      .card-header { padding: 14px 18px; }
+      .btn-voltar-fixo { position: static; display: inline-block; margin-bottom: 14px; }
     }
   </style>
 
+  <link rel="stylesheet" href="{{ url_for('static', filename='anotacoes.css') }}">
+  <script src="{{ url_for('static', filename='opcoes.js') }}"></script>
+  <script src="{{ url_for('static', filename='anotacoes.js') }}"></script>
+  <script src="{{ url_for('static', filename='autopreencher-cadastro.js') }}"></script>
   <script>
-    const bairrosPorMunicipio = {
-      Fortaleza: [ "Aerolândia", "Aeroporto", "Aldeota", "Alto Alegre", "Alto da Balança", "Álvaro Weyne",
-        "Amadeu Furtado", "Ancuri", "Antônio Bezerra", "Antônio Diogo", "Autran Nunes",
-        "Barra do Ceará", "Barroso", "Bela Vista", "Benfica", "Boa Vista", "Bom Futuro",
-        "Bom Jardim", "Bonsucesso", "Cachoeirinha", "Cais do Porto", "Cajazeiras", "Cambeba",
-        "Canindezinho", "Carlito Pamplona", "Centro", "Cidade 2000", "Cidade dos Funcionários",
-        "Coaçu", "Cocó", "Conjunto Ceará", "Conjunto Esperança", "Conjunto Palmeiras",
-        "Couto Fernandes", "Cristo Redentor", "Curió", "Damas", "De Lourdes", "Demócrito Rocha",
-        "Dendê", "Dias Macedo", "Dionísio Torres", "Dom Lustosa", "Edson Queiroz",
-        "Engenheiro Luciano Cavalcante", "Farias Brito", "Fátima", "Floresta", "Granja Lisboa",
-        "Granja Portugal", "Guajiru", "Henrique Jorge", "Itaoca", "Itaperi", "Jacarecanga",
-        "Jangurussu", "Jardim América", "Jardim Cearense", "Jardim das Oliveiras", "Jardim Guanabara",
-        "Jardim Iracema", "João XXIII", "Joaquim Távora", "Jóquei Clube", "José Bonifácio",
-        "José de Alencar", "Lagoa Redonda", "Manoel Dias Branco", "Manuel Sátiro", "Maraponga",
-        "Meireles", "Messejana", "Mondubim", "Monte Castelo", "Montese", "Moura Brasil",
-        "Mucuripe", "Novo Mondubim", "Olavo Oliveira", "Padre Andrade", "Pan Americano",
-        "Papicu", "Parangaba", "Parque Araxá", "Parque Dois Irmãos", "Parque Genibaú",
-        "Parque Iracema", "Parque Manibura", "Parque Presidente Vargas", "Parque Santa Maria",
-        "Parque Santa Rosa", "Parque São José", "Parquelândia", "Parreão", "Passaré",
-        "Patriolino Ribeiro", "Paupina", "Pedras", "Pici", "Pirambu", "Planalto Ayrton Senna",
-        "Praia de Iracema", "Prefeito José Walter", "Presidente Kennedy", "Quintino Cunha",
-        "Rodolfo Teófilo", "Sabiaguaba", "Salinas", "São Bento", "São Gerardo",
-        "São João do Tauape", "Sapiranga", "Serrinha", "Siqueira", "Varjota", "Vicente Pinzon",
-        "Vila Ellery", "Vila Peri", "Vila União", "Vila Velha"],
-      Caucaia: ["Parque Soledade", "Jurema", "Centro", "Tabapuá"],
-      Maracanaú: ["Pajuçara", "Jardim Bandeirantes", "Centro", "Alto Alegre"]
-    };
-
-    function atualizarBairros() {
-      const municipio = document.getElementById("municipio").value;
-      const bairroSelect = document.getElementById("bairro");
-      bairroSelect.innerHTML = "";
-      if (bairrosPorMunicipio[municipio]) {
-        bairrosPorMunicipio[municipio].forEach(b => {
-          const opt = document.createElement("option");
-          opt.value = b;
-          opt.textContent = b;
-          bairroSelect.appendChild(opt);
-        });
-      }
-    }
+    document.addEventListener("DOMContentLoaded", function () {
+      inicializarCombosDinamicos({
+        faccaoId: "faccao",
+        municipioId: "municipio",
+        bairroId: "bairro",
+      });
+      configurarAnotacoes({
+        modo: "local",
+        containerId: "anotacoes-lista",
+        hiddenInputId: "anotacoes_json",
+      });
+    });
 
     function verificarNome() {
       const inputNome = document.querySelector('input[name="nome"]');
@@ -102,116 +297,185 @@
         return;
       }
 
-      aviso.textContent = "⏳ Verificando nome...";
-      aviso.style.color = "#555";
+      aviso.textContent = "Verificando nome...";
+      aviso.style.color = "#6b7280";
 
       fetch(`/verificar_nome?fmt=json&nome=${encodeURIComponent(nome)}`)
         .then(res => res.json())
         .then(data => {
           if (data.status === "existente" && data.id) {
-            aviso.textContent = "⚠️ Este nome já está cadastrado.";
-            aviso.style.color = "#900";
+            aviso.textContent = "Este nome já está cadastrado.";
+            aviso.style.color = "#a5301f";
             abrirModalConfirma(data.id, nome);
           } else {
-            aviso.textContent = "✔️ Nome disponível para cadastro.";
-            aviso.style.color = "#080";
+            aviso.textContent = "Nome disponível para cadastro.";
+            aviso.style.color = "#1f8a4c";
           }
         })
         .catch(() => {
-          aviso.textContent = "⚠️ Erro ao verificar nome.";
-          aviso.style.color = "#900";
+          aviso.textContent = "Erro ao verificar nome.";
+          aviso.style.color = "#a5301f";
         });
     }
   </script>
 </head>
 <body>
+  {% include '_nav.html' %}
+
   <div class="form-wrapper">
     <div class="form-container">
-      <h2>Cadastro de Alvo</h2>
+      <div class="card-header">
+        <span class="eyebrow">SISCAD</span>
+        <h2>Cadastro de Alvo</h2>
+      </div>
 
-      {% if mensagem %}
-        <div style="background-color:#ffe0e0; color:#900; padding:10px; border-radius:8px; margin-bottom:15px;">
-          {{ mensagem }}
-        </div>
-      {% endif %}
+      <div class="card-body">
+        <form method="POST" enctype="multipart/form-data" id="form-cadastro">
+          <div class="form-grid">
+            {% if mensagem %}
+              <div class="alert">{{ mensagem }}</div>
+            {% endif %}
 
-      <form method="POST" enctype="multipart/form-data">
-        <input type="text" name="nome" placeholder="Nome" required onblur="verificarNome()">
-        <div id="aviso-nome" style="margin-bottom:10px; font-weight:bold;"></div>
+            <div class="field-group">
+              <label for="nome">Nome</label>
+              <div class="linha-nome-cadtex">
+                <input type="text" name="nome" id="nome" placeholder="Nome completo" required onblur="verificarNome()">
+                <button type="button" class="btn-cad-tex" onclick="abrirModalAutopreencher()"
+                        title="Colar um texto para preencher os campos automaticamente">CAD. TEX.</button>
+              </div>
+              <div id="aviso-nome" class="hint"></div>
+            </div>
 
-        <input type="text" name="vulgo" placeholder="Vulgo">
-        <input type="text" name="genitora" placeholder="Genitora">
-       <!-- ✅ Novo campo Facção -->
-<select name="faccao" required>
-  <option value="">Selecione a facção</option>
-  <option value="CV">CV</option>
-  <option value="PCC">PCC</option>
-  <option value="GDE">GDE</option>
-  <option value="MASSA">MASSA</option>
-  <option value="TCP">TCP</option>
-  <option value="ADA">ADA</option>
-  <option value="SEM">SEM</option>
-</select>
+            <div class="field-group">
+              <label for="vulgo">Vulgo</label>
+              <input type="text" name="vulgo" id="vulgo" placeholder="Vulgo (opcional)">
+            </div>
 
-        <select name="municipio" id="municipio" onchange="atualizarBairros()" required>
-          <option value="">Selecione o município</option>
-          <option value="Fortaleza">Fortaleza</option>
-          <option value="Caucaia">Caucaia</option>
-          <option value="Maracanaú">Maracanaú</option>
-        </select>
+            <div class="field-group">
+              <label for="genitora">Genitora</label>
+              <input type="text" name="genitora" id="genitora" placeholder="Nome da genitora">
+            </div>
 
-        <select name="bairro" id="bairro" required>
-          <option value="">Selecione o bairro</option>
-        </select>
+            <div class="field-group">
+              <label for="faccao">Facção</label>
+              <div class="combo-add-row">
+                <select name="faccao" id="faccao" required>
+                  <option value="">Selecione a facção</option>
+                </select>
+                <button type="button" class="btn-add-opcao" title="Adicionar facção"
+                        onclick="abrirNovaOpcao('faccao', 'faccao')">+</button>
+                <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                        onclick="editarOpcaoSelecionada('faccao', 'faccao')">✏️</button>
+                <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                        onclick="excluirOpcaoSelecionada('faccao', 'faccao')">🗑️</button>
+              </div>
+            </div>
 
-        <textarea name="anotacoes" placeholder="Anotações sobre o alvo" rows="4"></textarea>
-        <input type="text" name="octopus" placeholder="Endereço">
-        <select name="octopusasint" required> # octopus sim ou não
-         
-  <option value="NAO">NAO</option>
-  <option value="SIM">SIM</option>
-  
-</select>
-        <input type="file" name="foto" accept="image/*">
+            <div class="field-group">
+              <label for="municipio">Município</label>
+              <div class="combo-add-row">
+                <select name="municipio" id="municipio" required>
+                  <option value="">Selecione o município</option>
+                </select>
+                <button type="button" class="btn-add-opcao" title="Adicionar município"
+                        onclick="abrirNovaOpcao('municipio', 'municipio')">+</button>
+                <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                        onclick="editarOpcaoSelecionada('municipio', 'municipio')">✏️</button>
+                <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                        onclick="excluirOpcaoSelecionada('municipio', 'municipio')">🗑️</button>
+              </div>
+            </div>
 
-        <button type="submit">Salvar</button>
-      </form>
+            <div class="field-group">
+              <label for="bairro">Bairro</label>
+              <div class="combo-add-row">
+                <select name="bairro" id="bairro" required>
+                  <option value="">Selecione o bairro</option>
+                </select>
+                <button type="button" class="btn-add-opcao" title="Adicionar bairro"
+                        onclick="abrirNovaOpcao('bairro', 'bairro', 'municipio')">+</button>
+                <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                        onclick="editarOpcaoSelecionada('bairro', 'bairro')">✏️</button>
+                <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                        onclick="excluirOpcaoSelecionada('bairro', 'bairro')">🗑️</button>
+              </div>
+            </div>
 
-      <form action="/menu">
-        <button type="submit" style="background-color: #ccc; color: #000;">Voltar ao Menu</button>
-      </form>
+            <div class="field-group">
+              <label for="octopus">Endereço</label>
+              <input type="text" name="octopus" id="octopus" placeholder="Endereço">
+            </div>
+
+            <div class="field-group">
+              <label for="octopusasint">Octopus Asint</label>
+              <select name="octopusasint" id="octopusasint" required>
+                <option value="NAO">NÃO</option>
+                <option value="SIM">SIM</option>
+              </select>
+            </div>
+
+            <div class="field-group full">
+              <div class="anotacoes-cabecalho-campo">
+                <label for="anotacoes" style="margin:0;">Anotações</label>
+                <button type="button" class="btn-nova-anotacao" title="Nova anotação"
+                        onclick="abrirModalAnotacao()">+</button>
+              </div>
+              <div id="anotacoes-lista" class="anotacoes-lista"></div>
+              <input type="hidden" name="anotacoes_json" id="anotacoes_json" value="[]">
+            </div>
+
+            <div class="field-group full">
+              <div class="linha-foto-label">
+                <label for="foto" style="margin:0;">Foto</label>
+                <button type="button" class="btn-colar-foto" id="btn-colar-foto"
+                        title="Colar foto copiada (Ctrl+C) da área de transferência">📋 Colar foto</button>
+              </div>
+              <div id="foto-dropzone" class="foto-dropzone" tabindex="0">
+                <input type="file" name="foto" id="foto" accept="image/*" style="display:none;">
+                <div id="foto-dropzone-texto" class="foto-dropzone-texto">
+                  Arraste uma foto aqui ou <span class="foto-dropzone-link">clique para escolher</span>
+                </div>
+                <img id="foto-preview" class="foto-preview" style="display:none;" alt="Pré-visualização da foto">
+                <button type="button" id="foto-remover" class="foto-remover" style="display:none;">Remover foto</button>
+              </div>
+              <div id="foto-status" class="hint" style="text-align:center;"></div>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary">Salvar cadastro</button>
+        </form>
+      </div>
     </div>
   </div>
 
-  <h3 style="text-align:center">Total de alvos cadastrados: {{ total }}</h3>
+  <p class="footer-note">Total de alvos cadastrados: {{ total }}</p>
 
-  <!-- 🔍 Modal de confirmação quando nome já existe -->
+  <!-- Modal de confirmação quando nome já existe -->
   <div id="modal-confirma" style="
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
+    background: rgba(15,36,54,0.55);
     display: none; align-items: center; justify-content: center;
     z-index: 9999;
   ">
     <div style="
-      background: #fff; padding: 24px; border-radius: 12px;
-      width: 95%; max-width: 420px; text-align: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+      background: #fff; padding: 26px; border-radius: 10px;
+      width: 95%; max-width: 400px; text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
     ">
-      <h3 style="margin-top:0;">Pessoa já cadastrada</h3>
-      <p style="margin: 8px 0 20px;">pessoa já cadastrada, deseja atualizar os dados?</p>
+      <h3 style="margin-top:0; font-size:16px; color:#16324a;">Pessoa já cadastrada</h3>
+      <p style="margin: 8px 0 20px; font-size:14px; color:#2b2f36;">Essa pessoa já está cadastrada. Deseja atualizar os dados?</p>
 
-      <div style="display:flex; gap:12px; justify-content:center;">
-        <button id="btn-confirma-sim" style="padding:10px 16px; border:none; border-radius:8px; background:#0e93ec; color:#fff; font-weight:bold; cursor:pointer;">
-          sim
+      <div style="display:flex; gap:10px; justify-content:center;">
+        <button id="btn-confirma-sim" style="padding:10px 18px; border:none; border-radius:6px; background:#2f6690; color:#fff; font-weight:600; font-size:14px; cursor:pointer;">
+          Sim, atualizar
         </button>
-        <button id="btn-confirma-nao" style="padding:10px 16px; border:none; border-radius:8px; background:#ccc; color:#000; font-weight:bold; cursor:pointer;">
-          não
+        <button id="btn-confirma-nao" style="padding:10px 18px; border:none; border-radius:6px; background:#eceff2; color:#2b2f36; font-weight:600; font-size:14px; cursor:pointer;">
+          Não
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts para controle do modal -->
   <script>
     let idExistente = null;
 
@@ -233,6 +497,265 @@
     document.getElementById('btn-confirma-nao').addEventListener('click', function () {
       fecharModalConfirma();
     });
+  </script>
+
+  <!-- Modal de nova/editar anotação (Data + Tipo + Contexto) -->
+  <div id="modal-anotacao" class="modal-anotacao-overlay">
+    <div class="modal-anotacao-box">
+      <h3 id="anot-modal-titulo">Nova anotação</h3>
+
+      <label for="anot-data">Data</label>
+      <input type="date" id="anot-data">
+
+      <label for="anot-tipo">Tipo</label>
+      <div class="combo-add-row">
+        <select id="anot-tipo">
+          <option value="">Selecione o tipo</option>
+        </select>
+        <button type="button" class="btn-add-opcao" title="Adicionar tipo"
+                onclick="abrirNovaOpcao('crime', 'anot-tipo')">+</button>
+        <button type="button" class="btn-add-opcao" title="Editar item selecionado"
+                onclick="editarOpcaoSelecionada('crime', 'anot-tipo')">✏️</button>
+        <button type="button" class="btn-add-opcao" title="Excluir item selecionado"
+                onclick="excluirOpcaoSelecionada('crime', 'anot-tipo')">🗑️</button>
+      </div>
+
+      <label for="anot-contexto">Contexto</label>
+      <textarea id="anot-contexto" rows="4" placeholder="Cole ou escreva a anotação"></textarea>
+
+      <div class="modal-anotacao-botoes">
+        <button type="button" class="btn-anotacao-cancelar" onclick="fecharModalAnotacao()">Cancelar</button>
+        <button type="button" class="btn-anotacao-salvar" onclick="salvarAnotacaoModal()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal "CAD. TEX." -- cola um texto e tenta preencher os campos -->
+  <div id="modal-autopreencher" style="
+    position: fixed; inset: 0;
+    background: rgba(15,36,54,0.55);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9999;
+  ">
+    <div style="
+      background: #fff; padding: 24px; border-radius: 10px;
+      width: 95%; max-width: 480px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    ">
+      <h3 style="margin-top:0; font-size:16px; color:#16324a;">Colar texto para preencher</h3>
+      <p style="margin: 0 0 12px; font-size:13px; color:#5b6472;">
+        Cole um texto com os dados do alvo (funciona com texto corrido ou colado de fichas/boletins).
+        Reconheço: Nome (inclusive sem rótulo, na 1ª linha), Vulgo/Alcunha, Mãe/Genitora,
+        Facção, Município, Bairro e Endereço/Logradouro (com número, quando indicado).
+        Se houver mais de um endereço, uso o primeiro para os campos e coloco os demais em Anotações.
+        Procedimento (IPL/Inquérito/Processo/APF/TCO/B.O.) e artigos de lei também vão para Anotações.
+      </p>
+      <textarea id="texto-autopreencher" rows="10" placeholder="Cole aqui o texto..."
+                style="width:100%; box-sizing:border-box; resize:vertical;"></textarea>
+      <div id="barra-autopreencher-wrap" style="display:none; margin-top:10px;">
+        <div style="background:#eceff2; border-radius:6px; overflow:hidden; height:8px;">
+          <div id="barra-autopreencher" style="background:#2f6690; height:100%; width:0%; transition:width .15s ease;"></div>
+        </div>
+        <div id="barra-autopreencher-label" style="margin-top:4px; font-size:12px; color:#5b6472;"></div>
+      </div>
+      <div id="resultado-autopreencher" style="margin-top:8px; font-size:13px; min-height:18px;"></div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:14px;">
+        <button type="button" onclick="fecharModalAutopreencher()"
+                style="padding:10px 18px; border:none; border-radius:6px; background:#eceff2; color:#2b2f36; font-weight:600; font-size:14px; cursor:pointer;">
+          Cancelar
+        </button>
+        <button type="button" onclick="verificarTextoAutopreencher()"
+                style="padding:10px 18px; border:none; border-radius:6px; background:#2f6690; color:#fff; font-weight:600; font-size:14px; cursor:pointer;">
+          Verificar e preencher
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Campo de foto: arrastar, colar (Ctrl+V) ou clicar pra escolher.
+    // Tudo local no navegador -- só monta o arquivo escolhido/colado no
+    // input original, o envio do formulário continua exatamente igual.
+    (function () {
+      const dropzone = document.getElementById('foto-dropzone');
+      const input = document.getElementById('foto');
+      const texto = document.getElementById('foto-dropzone-texto');
+      const preview = document.getElementById('foto-preview');
+      const btnRemover = document.getElementById('foto-remover');
+      const btnColarFoto = document.getElementById('btn-colar-foto');
+      if (!dropzone || !input) return;
+
+      function mostrarPreview(file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+        texto.style.display = 'none';
+        btnRemover.style.display = 'inline-block';
+      }
+
+      function limparFoto() {
+        input.value = '';
+        preview.removeAttribute('src');
+        preview.style.display = 'none';
+        texto.style.display = 'block';
+        btnRemover.style.display = 'none';
+      }
+
+      function definirArquivo(file) {
+        if (!file || !file.type || !file.type.startsWith('image/')) return;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+        mostrarPreview(file);
+        dropzone.classList.remove('dragover');
+        mostrarStatusFoto('');
+        const status = document.getElementById('foto-status');
+        if (status) status.classList.remove('foto-status-piscando');
+        clearTimeout(window._fotoStatusTimeout);
+      }
+
+      function mostrarStatusFoto(msg, cor) {
+        const status = document.getElementById('foto-status');
+        if (!status) return;
+        status.textContent = msg || '';
+        status.style.color = cor || '#5b6472';
+      }
+
+      // Modo manual: dá foco na caixa e mostra um aviso piscando pra
+      // colar com Ctrl+V -- some sozinho depois de alguns segundos ou
+      // assim que a foto é colada.
+      function ativarModoColarManual() {
+        dropzone.focus();
+        dropzone.classList.add('dragover');
+        const status = document.getElementById('foto-status');
+        mostrarStatusFoto('Cole a foto agora (Ctrl+V)', '#2f6690');
+        if (status) status.classList.add('foto-status-piscando');
+        clearTimeout(window._fotoStatusTimeout);
+        window._fotoStatusTimeout = setTimeout(function () {
+          dropzone.classList.remove('dragover');
+          mostrarStatusFoto('');
+        }, 6000);
+      }
+
+      // Tenta o colar 100% automático via API oficial do navegador antes
+      // de cair no modo manual acima.
+      async function tentarColarAutomatico() {
+        if (!window.isSecureContext || !navigator.clipboard || !navigator.clipboard.read) return false;
+        try {
+          const itens = await navigator.clipboard.read();
+          for (const item of itens) {
+            const tipoImagem = item.types.find(function (t) { return t.startsWith('image/'); });
+            if (tipoImagem) {
+              const blob = await item.getType(tipoImagem);
+              const extensao = tipoImagem.split('/')[1] || 'png';
+              definirArquivo(new File([blob], 'foto-colada.' + extensao, { type: tipoImagem }));
+              return true;
+            }
+          }
+          return false;
+        } catch (err) {
+          return false;
+        }
+      }
+
+      dropzone.addEventListener('click', function (e) {
+        if (e.target === btnRemover) return;
+        input.click();
+      });
+
+      input.addEventListener('change', function () {
+        if (input.files && input.files[0]) mostrarPreview(input.files[0]);
+      });
+
+      ['dragenter', 'dragover'].forEach(function (evt) {
+        dropzone.addEventListener(evt, function (e) {
+          e.preventDefault(); e.stopPropagation();
+          dropzone.classList.add('dragover');
+        });
+      });
+      ['dragleave', 'dragend', 'drop'].forEach(function (evt) {
+        dropzone.addEventListener(evt, function (e) {
+          e.preventDefault(); e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        });
+      });
+      dropzone.addEventListener('drop', function (e) {
+        const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (file) definirArquivo(file);
+      });
+
+      btnRemover.addEventListener('click', function (e) {
+        e.stopPropagation();
+        limparFoto();
+      });
+
+      // Botão "Colar foto": tenta ler a área de transferência com um
+      // clique só; se o navegador não deixar (sem suporte/permissão),
+      // dá foco na caixa e pede pra apertar Ctrl+V, com o motivo exato.
+      if (btnColarFoto) {
+        btnColarFoto.addEventListener('click', async function (e) {
+          e.stopPropagation();
+          const colou = await tentarColarAutomatico();
+          if (!colou) ativarModoColarManual();
+        });
+      }
+
+      // Ctrl+V solto na página continua funcionando como reforço (não
+      // precisa clicar em nada) -- só entra em ação se o clipboard tiver
+      // uma imagem; texto colado em outros campos não é afetado.
+      document.addEventListener('paste', function (e) {
+        const dados = e.clipboardData || window.clipboardData;
+        if (!dados || !dados.items) return;
+        for (let i = 0; i < dados.items.length; i++) {
+          if (dados.items[i].type && dados.items[i].type.startsWith('image/')) {
+            const file = dados.items[i].getAsFile();
+            if (file) {
+              definirArquivo(file);
+              e.preventDefault();
+            }
+            break;
+          }
+        }
+      });
+    })();
+  </script>
+  <!-- Modal "Salvando..." -- aparece ao clicar em Salvar cadastro, some
+       sozinho quando a página trocar (sucesso ou erro), já que o envio
+       do formulário é uma navegação normal, não uma chamada em segundo
+       plano. -->
+  <div id="modal-salvando" style="
+    position: fixed; inset: 0;
+    background: rgba(15,36,54,0.65);
+    display: none; align-items: center; justify-content: center;
+    z-index: 10000;
+  ">
+    <div style="
+      background: #fff; padding: 32px 28px; border-radius: 10px;
+      width: 90%; max-width: 320px; text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    ">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="SISCAD"
+           style="max-width: 140px; max-height: 90px; margin: 0 auto 18px; display:block;"
+           onerror="this.style.display='none';">
+      <p style="margin: 0 0 16px; font-size:14px; font-weight:600; color:#16324a;">Salvando cadastro...</p>
+      <div class="barra-salvando-track">
+        <div class="barra-salvando-fill"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById('form-cadastro');
+      const modalSalvando = document.getElementById('modal-salvando');
+      if (!form || !modalSalvando) return;
+      form.addEventListener('submit', function () {
+        // Se o navegador barrar o envio por campo obrigatório vazio, este
+        // evento nem dispara -- então só mostramos o modal quando o
+        // formulário realmente vai ser enviado.
+        modalSalvando.style.display = 'flex';
+        const botaoSalvar = form.querySelector('button[type="submit"]');
+        if (botaoSalvar) botaoSalvar.disabled = true;
+      });
+    })();
   </script>
 </body>
 </html>

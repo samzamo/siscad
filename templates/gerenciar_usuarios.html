@@ -2,126 +2,301 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Gerenciar Usuários</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Usuários · SISCAD</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='siscad-nav.css') }}">
     <style>
+        :root {
+            --navy: #16324a;
+            --accent: #2f6690;
+            --bg: #f2f4f7;
+            --card-bg: #ffffff;
+            --border: #dbe2ea;
+            --text: #2b2f36;
+            --text-muted: #6b7280;
+            --success: #1f8a4c;
+            --danger: #c0392b;
+            --danger-dark: #a5301f;
+        }
+        * { box-sizing: border-box; }
         body {
-            font-family: Arial, sans-serif;
-            padding: 30px;
-            background-color: #f8f8f8;
+            font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+            padding: 24px 16px 60px;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
         }
-        h2 {
-            color: #444;
+
+        .page { max-width: 1000px; margin: 0 auto; }
+
+        .topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+        .topo h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--navy);
+        }
+        .topo .eyebrow {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+
+        .button, a.button {
+            padding: 9px 16px;
+            background-color: #eceff2;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            display: inline-block;
+        }
+        .button:hover, a.button:hover { background-color: #e1e5ea; }
+
+        .btn-voltar-fixo {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 9px 16px;
+            background-color: #eceff2;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            z-index: 10;
+        }
+        .btn-voltar-fixo:hover { background-color: #e1e5ea; }
+
+        h3.section-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-muted);
+            margin: 26px 0 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 40px;
+            margin-bottom: 10px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
         }
         th, td {
-            border: 1px solid #ccc;
-            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            padding: 10px 12px;
             text-align: left;
+            font-size: 13px;
+            vertical-align: middle;
         }
+        tr:last-child td { border-bottom: none; }
         th {
-            background-color: #eee;
-        }
-        a.button, input[type="submit"], select {
-            padding: 5px 10px;
-            background-color: #2d9cdb;
+            background-color: var(--navy);
             color: white;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-ativo { background-color: #e4f5ea; color: var(--success); }
+        .status-pendente { background-color: #fff3d6; color: #8a6d1f; }
+
+        form.inline { display: inline-flex; gap: 6px; align-items: center; margin: 2px 0; }
+
+        select, input[type="text"] {
+            padding: 6px 9px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 12px;
+            font-family: inherit;
+            background-color: #fbfcfd;
+        }
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(47,102,144,0.12);
+            background-color: #fff;
+        }
+
+        input[type="submit"] {
+            padding: 6px 12px;
+            border-radius: 6px;
             border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        a.button:hover, input[type="submit"]:hover {
-            background-color: #1c7bb8;
-        }
-        form.inline {
-            display: inline;
-        }
-        input[type="text"] {
-            padding: 5px;
-            margin-right: 5px;
-        }
-        select {
-            margin-right: 5px;
-            background-color: #2d9cdb;
+            background-color: var(--accent);
             color: white;
+            font-weight: 600;
+            font-size: 12px;
+            cursor: pointer;
         }
-        select:hover {
-            background-color: #1c7bb8;
+        input[type="submit"]:hover { background-color: #24506f; }
+
+        form.inline:last-child input[type="submit"] {
+            background-color: var(--danger);
         }
+        form.inline:last-child input[type="submit"]:hover {
+            background-color: var(--danger-dark);
+        }
+
+        .acoes-cell { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
     </style>
 </head>
 <body>
-    <h2>Usuários Ativos e Cadastrados</h2>
-    <a href="{{ url_for('menu_principal') }}" class="button">🏠 Voltar ao Menu</a>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Usuário</th>
-            <th>Senha Hash</th>
-            <th>Status</th>
-            <th>Perfil</th>
-            <th>Ações</th>
-        </tr>
-        {% for usuario in usuarios %}
-        <tr>
-            <td>{{ usuario.id }}</td>
-            <td>{{ usuario.username }}</td>
-            <td>{{ usuario.password }}</td>
-            <td>
-                {% if usuario.ativo %}
-                    ✅ Ativo
-                {% else %}
-                    ⏳ Pendente
+    {% include '_nav.html' %}
+    <a href="/menu" class="btn-voltar-fixo">Voltar ao menu</a>
+    <div class="page">
+        <div class="topo">
+            <h2><span class="eyebrow">SISCAD</span>Usuários Ativos e Cadastrados</h2>
+        </div>
+
+        <input type="text" id="busca-usuario" placeholder="Pesquisar por usuário ou ID..."
+               oninput="filtrarUsuariosTabela()" style="width:100%; max-width:320px; margin-bottom:12px;">
+
+        <table id="tabela-usuarios">
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Senha Hash</th>
+                <th>Status</th>
+                <th>Perfil</th>
+                {% if eh_samara %}<th>Ver Histórico</th>{% endif %}
+                <th>Ações</th>
+            </tr>
+            {% for usuario in usuarios %}
+            <tr class="pg-row" data-busca="{{ usuario.id }} {{ usuario.username }}">
+                <td>{{ usuario.id }}</td>
+                <td>{{ usuario.username }}</td>
+                <td style="font-size:11px; color:#6b7280;">{{ usuario.password }}</td>
+                <td>
+                    {% if usuario.ativo %}
+                        <span class="status-badge status-ativo">Ativo</span>
+                    {% else %}
+                        <span class="status-badge status-pendente">Pendente</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <form method="POST" action="/gerenciar_usuarios" class="inline">
+                        <input type="hidden" name="id" value="{{ usuario.id }}">
+                        <select name="novo_tipo">
+                            <option value="normal" {% if usuario.tipo == 'normal' %}selected{% endif %}>Normal</option>
+                            <option value="moderador" {% if usuario.tipo == 'moderador' %}selected{% endif %}>Moderador</option>
+                            <option value="admin" {% if usuario.tipo == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                        <input type="submit" value="Alterar">
+                    </form>
+                </td>
+                {% if eh_samara %}
+                <td>
+                    {% if usuario.username.strip().upper() == 'SAMARA' %}
+                        <span style="font-size:12px; color:#6b7280;">sempre liberado</span>
+                    {% else %}
+                        <form method="POST" action="/gerenciar_usuarios" class="inline">
+                            <input type="hidden" name="ver_historico_id" value="{{ usuario.id }}">
+                            <input type="hidden" name="ver_historico_valor" value="{{ '0' if usuario.pode_ver_historico else '1' }}">
+                            <input type="submit" value="{{ 'Revogar' if usuario.pode_ver_historico else 'Liberar' }}">
+                        </form>
+                        <span class="status-badge {{ 'status-ativo' if usuario.pode_ver_historico else 'status-pendente' }}" style="margin-left:6px;">
+                            {{ 'Liberado' if usuario.pode_ver_historico else 'Bloqueado' }}
+                        </span>
+                    {% endif %}
+                </td>
                 {% endif %}
-            </td>
-            <td>
-                <form method="POST" action="/gerenciar_usuarios" class="inline">
-                    <input type="hidden" name="id" value="{{ usuario.id }}">
-                    <select name="novo_tipo">
-                        <option value="normal" {% if usuario.tipo == 'normal' %}selected{% endif %}>Normal</option>
-                        <option value="moderador" {% if usuario.tipo == 'moderador' %}selected{% endif %}>Moderador</option>
-                        <option value="admin" {% if usuario.tipo == 'admin' %}selected{% endif %}>Admin</option>
-                    </select>
-                    <input type="submit" value="🔄 Alterar">
-                </form>
-            </td>
-            <td>
-                <form method="POST" action="/gerenciar_usuarios" class="inline">
-                    <input type="hidden" name="id" value="{{ usuario.id }}">
-                    <input type="text" name="nova_senha" placeholder="Nova senha" required>
-                    <input type="submit" value="🔒 Alterar Senha">
-                </form>
+                <td>
+                    <div class="acoes-cell">
+                        <form method="POST" action="/gerenciar_usuarios" class="inline">
+                            <input type="hidden" name="id" value="{{ usuario.id }}">
+                            <input type="text" name="nova_senha" placeholder="Nova senha" required>
+                            <input type="submit" value="Alterar Senha">
+                        </form>
 
-                <form method="POST" action="/gerenciar_usuarios" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
-                    <input type="hidden" name="excluir_id" value="{{ usuario.id }}">
-                    <input type="submit" value="🗑️ Excluir">
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+                        <form method="POST" action="/gerenciar_usuarios" class="inline" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                            <input type="hidden" name="excluir_id" value="{{ usuario.id }}">
+                            <input type="submit" value="Excluir">
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="pg-controls" id="pg-usuarios">
+            <button type="button" class="pg-prev">‹ Anterior</button>
+            <span class="pg-info"></span>
+            <button type="button" class="pg-next">Próxima ›</button>
+        </div>
 
-    
+        <h3 class="section-title">Usuários pendentes de aprovação</h3>
+        <table>
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>Ação</th>
+            </tr>
+            {% for u in pendentes %}
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td>
+                <td><a href="{{ url_for('autorizar', id=u.id) }}" class="button">Autorizar</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 
-    <h2>Usuários Pendentes de Aprovação</h2>
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Usuário</th>
-            <th>Ação</th>
-        </tr>
-        {% for u in pendentes %}
-        <tr>
-            <td>{{ u.id }}</td>
-            <td>{{ u.username }}</td>
-            <td><a href="{{ url_for('autorizar', id=u.id) }}" class="button">✔️ Autorizar</a></td>
-        </tr>
-        {% endfor %}
-    </table>
+    <script src="{{ url_for('static', filename='siscad-shared.js') }}"></script>
+    <script>
+        function normalizarBuscaUsuario(texto) {
+            return (texto || '').toString()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase().trim();
+        }
+
+        function filtrarUsuariosTabela() {
+            const termo = normalizarBuscaUsuario(document.getElementById('busca-usuario').value);
+            const linhas = document.querySelectorAll('#tabela-usuarios tr.pg-row');
+            const controles = document.getElementById('pg-usuarios');
+
+            if (!termo) {
+                // sem termo -> devolve pra paginação normal
+                linhas.forEach(function (linha) { linha.style.display = ''; });
+                paginarLista('#tabela-usuarios', 'tr.pg-row', 10, '#pg-usuarios');
+                return;
+            }
+
+            // com termo -> mostra todos os que baterem, sem paginar
+            if (controles) controles.style.display = 'none';
+            linhas.forEach(function (linha) {
+                const texto = normalizarBuscaUsuario(linha.dataset.busca);
+                linha.style.display = texto.includes(termo) ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            paginarLista('#tabela-usuarios', 'tr.pg-row', 10, '#pg-usuarios');
+        });
+    </script>
 </body>
 </html>
