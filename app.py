@@ -24,7 +24,7 @@ app.secret_key = 'sua_chave_secreta_segura_123'
 
 # 🔗 Conexão com banco PostgreSQL no Neon
 app.config['SQLALCHEMY_DATABASE_URI'] = (
-    'postgresql://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb'
+    'postgresql+psycopg2://neondb_owner:npg_fCVgz9kF0RBD@ep-polished-cherry-af5c7u6k-pooler.c-2.us-west-2.aws.neon.tech/neondb'
     '?sslmode=require&connect_timeout=20'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
