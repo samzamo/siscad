@@ -272,8 +272,15 @@
   <script src="{{ url_for('static', filename='opcoes.js') }}"></script>
   <script src="{{ url_for('static', filename='anotacoes.js') }}"></script>
   <script src="{{ url_for('static', filename='autopreencher-cadastro.js') }}"></script>
+  <script src="{{ url_for('static', filename='comunidade.js') }}"></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      configurarAutoComunidade({
+        enderecoInputId: 'octopus',
+        comunidadeHiddenId: 'comunidade',
+        displayId: 'comunidade-display',
+        bairroInputId: 'bairro',
+      });
       inicializarCombosDinamicos({
         faccaoId: "faccao",
         municipioId: "municipio",
@@ -404,6 +411,8 @@
             <div class="field-group">
               <label for="octopus">Endereço</label>
               <input type="text" name="octopus" id="octopus" placeholder="Endereço">
+              <div id="comunidade-display" style="font-size:12px; color:#6b7280; margin-top:4px;"></div>
+              <input type="hidden" name="comunidade" id="comunidade">
             </div>
 
             <div class="field-group">

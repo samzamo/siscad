@@ -93,8 +93,8 @@
                         </td>
                         <td>{{ item.genitora }}</td>
                         <td>
-                            {{ item.endereco }}
-                            <a href="https://www.google.com/maps/search/{{ item.endereco | urlencode }}" target="_blank">
+                            {{ resumir_endereco(item.endereco) }}
+                            <a href="https://www.google.com/maps/search/{{ item.endereco | urlencode }}" target="_blank" title="Ver endereço completo no Google Maps">
                                 <i class="fas fa-map-marker-alt map-icon"></i>
                             </a>
                         </td>

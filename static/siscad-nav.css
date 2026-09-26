@@ -101,7 +101,17 @@ label {
 .topbar .btn-sair:hover { background-color: rgba(255,255,255,0.16); }
 
 @media (max-width: 420px) {
-  .topbar .user-name { display: none; }
+  .topbar { padding: 0 10px; }
+  .topbar .brand { font-size: 12px; gap: 5px; }
+  .topbar .user-area { gap: 6px; }
+  .topbar .user-name {
+    font-size: 10.5px;
+    max-width: 84px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar .btn-sair { padding: 6px 9px; font-size: 10.5px; }
 }
 
 /* ---- Barra secundária: botão padronizado "Voltar ao Menu" ---- */

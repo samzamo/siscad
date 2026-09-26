@@ -124,8 +124,11 @@ function preencherModal(d) {
   // Município/bairro pré-selecionados (já vêm no mesmo formato dos <select>)
   const municipioSelect = document.getElementById('municipio');
   const bairroSelect = document.getElementById('bairro');
+  const faccaoSelect = document.getElementById('faccao');
   municipioSelect.dataset.atual = d.municipio_normalizado || '';
   bairroSelect.dataset.atual = d.bairro_normalizado || '';
+  // Mandado não traz facção -- padrão "SEM" em vez de ficar em branco.
+  faccaoSelect.dataset.atual = 'SEM';
 
   inicializarCombosDinamicos({
     faccaoId: 'faccao',
@@ -235,27 +238,39 @@ async function obterLinkCurto(url) {
 
 async function montarMensagemWhatsapp() {
   const nome = document.getElementById('nome').value.trim();
+  const vulgo = document.getElementById('vulgo').value.trim();
   const genitora = document.getElementById('genitora').value.trim();
   const nascimento = document.getElementById('data_nascimento').value.trim();
+  const bairro = document.getElementById('bairro').value.trim();
   const tipificacao = document.getElementById('mandado_tipificacao').value.trim();
   const dataMandado = document.getElementById('mandado_data').value.trim();
   const comarca = document.getElementById('mandado_comarca').value.trim();
   const numero = document.getElementById('mandado_numero').value.trim();
   const endereco = document.getElementById('mandado_endereco').value.trim();
 
-  const linhas = ['🚨 *MANDADO*'];
-  if (nome) linhas.push('*Nome:* ' + nome);
-  if (genitora) linhas.push('*Genitora:* ' + genitora);
-  if (nascimento) linhas.push('*Nascimento:* ' + nascimento);
-  if (tipificacao) linhas.push('*Tipo de crime:* ' + tipificacao);
-  if (dataMandado) linhas.push('*Data do mandado:* ' + dataMandado);
-  if (comarca) linhas.push('*Comarca:* ' + comarca);
-  if (numero) linhas.push('*Nº do mandado:* ' + numero);
-  if (endereco) linhas.push('*Endereço:* ' + endereco);
+  const titulo = tipificacao ? `🚨 *MANDADO POR ${tipificacao.toUpperCase()}*` : '🚨 *MANDADO*';
+  const linhas = [titulo, ''];
+
+  if (dataMandado) linhas.push('📅 *Data do mandado:* ' + dataMandado);
+  if (numero) linhas.push('🔢 *Nº do mandado:* ' + numero);
+  if (comarca) linhas.push('🏛️ *Comarca:* ' + comarca);
+  if (dataMandado || numero || comarca) linhas.push('');
+
+  if (nome) linhas.push('👤 *Nome:* ' + nome);
+  if (vulgo) linhas.push('🏷️ *Alcunha:* ' + vulgo);
+  if (nascimento) linhas.push('🎂 *Nascimento:* ' + nascimento);
+  if (genitora) linhas.push('👩 *Genitora:* ' + genitora);
+  if (nome || vulgo || nascimento || genitora) linhas.push('');
+
+  if (bairro) linhas.push('📍 *Bairro:* ' + bairro);
+  if (endereco) linhas.push('🏠 *Endereço:* ' + endereco);
   if (endereco) {
     const linkCurto = await obterLinkCurto(montarLinkGoogleMapsCurto(endereco));
-    linhas.push('📍 ' + linkCurto);
+    linhas.push('🗺️ *Localização:* ' + linkCurto);
   }
+
+  // Remove eventuais linhas em branco duplicadas ou nas pontas
+  while (linhas.length && linhas[linhas.length - 1] === '') linhas.pop();
 
   return linhas.join('\n');
 }

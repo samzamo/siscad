@@ -261,6 +261,10 @@
           <option value="SEM">SEM</option>
         </select>
 
+        <select id="comunidade" name="comunidade">
+          <option value="">Comunidade</option>
+        </select>
+
         <input type="text" name="crime" placeholder="Crime (termo nas anotações)">
       </div>
 
@@ -271,7 +275,7 @@
   <div class="resultado-lista">
     {% for alvo in resultados %}
       <div class="alvo-item">
-        <span>{{ alvo.nome }} — {{ alvo.bairro }}</span>
+        <span>{{ alvo.nome }} — {{ alvo.bairro }}{% if alvo.comunidade %} — {{ alvo.comunidade }}{% endif %}</span>
         <button class="ver-btn" onclick="abrirModal(
           '{{ alvo.nome }}',
           '{{ alvo.bairro }}',
@@ -305,6 +309,7 @@
     async function carregarFiltrosMunicipioBairro() {
       const municipioSelect = document.getElementById("municipio");
       const bairroSelect = document.getElementById("bairro");
+      const comunidadeSelect = document.getElementById("comunidade");
 
       const municipios = await buscarOpcoes("municipio");
       preencherSelect(municipioSelect, municipios, null);
@@ -313,6 +318,11 @@
         const bairros = this.value ? await buscarOpcoes("bairro", this.value) : [];
         preencherSelect(bairroSelect, bairros, null);
       });
+
+      fetch("/comunidade/lista")
+        .then(r => r.json())
+        .then(nomes => preencherSelect(comunidadeSelect, nomes, null))
+        .catch(() => {});
     }
 
     document.addEventListener("DOMContentLoaded", carregarFiltrosMunicipioBairro);

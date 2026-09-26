@@ -17,6 +17,7 @@ import os
 import re
 import requests
 import pdfplumber
+import xml.etree.ElementTree as ET
 
 
 app = Flask(__name__)
@@ -53,6 +54,68 @@ def limpar_texto(texto):
     texto = texto.upper()
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto
+
+# ─────────────────────────────────────────────────────────────────────────
+# Comunidades (AIS 18) -- carrega o KML uma única vez na memória e localiza
+# a comunidade de um ponto (lat/lon) por geometria pura em Python, sem
+# nenhuma biblioteca extra (nem shapely) e sem nenhum serviço pago.
+# ─────────────────────────────────────────────────────────────────────────
+_KML_NS = {'k': 'http://www.opengis.net/kml/2.2'}
+
+def _carregar_comunidades_kml(caminho):
+    comunidades = []
+    try:
+        tree = ET.parse(caminho)
+    except Exception as e:
+        print(f'⚠️ Não consegui ler o KML de comunidades: {e}')
+        return comunidades
+
+    for pm in tree.getroot().findall('.//k:Placemark', _KML_NS):
+        nome_el = pm.find('k:name', _KML_NS)
+        nome = (nome_el.text or '').strip() if nome_el is not None else ''
+        if not nome:
+            continue
+        aneis = []
+        for poly in pm.findall('.//k:Polygon', _KML_NS):
+            coords_el = poly.find('.//k:outerBoundaryIs/k:LinearRing/k:coordinates', _KML_NS)
+            if coords_el is None or not coords_el.text:
+                continue
+            anel = []
+            for par in coords_el.text.strip().split():
+                partes = par.split(',')
+                if len(partes) >= 2:
+                    try:
+                        anel.append((float(partes[0]), float(partes[1])))  # (lon, lat)
+                    except ValueError:
+                        continue
+            if len(anel) >= 3:
+                aneis.append(anel)
+        if aneis:
+            comunidades.append({'nome': nome, 'nome_normalizado': limpar_texto(nome), 'aneis': aneis})
+    return comunidades
+
+def _ponto_no_anel(lon, lat, anel):
+    dentro = False
+    n = len(anel)
+    x1, y1 = anel[0]
+    for i in range(1, n + 1):
+        x2, y2 = anel[i % n]
+        if (y1 > lat) != (y2 > lat):
+            x_intersecao = (x2 - x1) * (lat - y1) / (y2 - y1) + x1
+            if lon < x_intersecao:
+                dentro = not dentro
+        x1, y1 = x2, y2
+    return dentro
+
+def encontrar_comunidade(lat, lon):
+    for c in COMUNIDADES_AIS18:
+        for anel in c['aneis']:
+            if _ponto_no_anel(lon, lat, anel):
+                return c['nome_normalizado']
+    return None
+
+COMUNIDADES_AIS18 = _carregar_comunidades_kml(os.path.join(os.path.dirname(__file__), 'dados', 'Comunidades.kml'))
+print(f'🗺️  {len(COMUNIDADES_AIS18)} comunidades (AIS 18) carregadas do KML.')
 
 # ─────────────────────────────────────────────────────────────────────────
 # Busca fonética (por som, não só por grafia exata)
@@ -567,6 +630,7 @@ class Pessoa(db.Model):
     fonetico_vulgo = db.Column(db.String(255))  # idem, para o vulgo
     forma_nome = db.Column(db.String(255))      # forma p/ "nome parecido" (busca padrão, mais rigorosa)
     forma_vulgo = db.Column(db.String(255))     # idem, para o vulgo
+    comunidade = db.Column(db.String(150), nullable=True)  # comunidade (AIS 18), detectada automaticamente pelo endereço
 
 class FotoHistorico(db.Model):
     """Fotos antigas de um alvo (substituídas ao atualizar o cadastro).
@@ -595,6 +659,31 @@ class Mandado(db.Model):
     data = db.Column(db.String)
     endereco = db.Column(db.String)
     status = db.Column(db.String(20), default='neutro')
+
+
+def resumir_endereco_mandado(endereco):
+    """Versão curta do endereço (só rua + bairro) pra listagem em
+    /mandados -- o endereço completo continua salvo/usado no ícone do
+    Google Maps. Mesma lógica de separação usada na extração do PDF
+    (o bairro é o trecho logo antes do "CEP", não fixo na 2ª posição,
+    por causa de complementos tipo "Nºs 751 OU 770" no meio)."""
+    if not endereco:
+        return ''
+    partes = [p.strip() for p in endereco.split(',') if p.strip()]
+    if not partes:
+        return endereco
+    rua = partes[0]
+    idx_cep = next((i for i, p in enumerate(partes) if re.match(r'(?i)^cep\b', p)), None)
+    if idx_cep is not None and idx_cep >= 2:
+        bairro = partes[idx_cep - 1]
+    elif len(partes) > 1:
+        bairro = partes[1]
+    else:
+        bairro = ''
+    return ' - '.join(p for p in [rua, bairro] if p)
+
+
+app.jinja_env.globals['resumir_endereco'] = resumir_endereco_mandado
 
 # ─────────────────────────────────────────────────────────────────────────
 # Importação de PDF de Mandado (BNMP / Tribunal de Justiça)
@@ -678,7 +767,7 @@ def extrair_dados_mandado(texto):
 
         cep_m = re.search(r'CEP\s*([\d.\-]+)', endereco_bruto, re.IGNORECASE)
         d['cep'] = cep_m.group(1) if cep_m else ''
-        muni_uf_m = re.search(r',\s*([A-Za-zÀ-ú\s]+)\s*-\s*([A-Z]{2})\s*$', endereco_bruto)
+        muni_uf_m = re.search(r',\s*([A-Za-zÀ-ú\s]+?)\s*[-/]\s*([A-Z]{2})\s*[.,]?\s*$', endereco_bruto)
         d['municipio'] = muni_uf_m.group(1).strip() if muni_uf_m else ''
         d['uf'] = muni_uf_m.group(2).strip() if muni_uf_m else ''
 
@@ -1045,6 +1134,7 @@ def mandado_importar():
     municipio = limpar_texto(request.form.get('municipio', ''))
     octopus = limpar_texto(request.form.get('octopus', ''))
     octopusasint = limpar_texto(request.form.get('octopusasint', 'NAO'))
+    comunidade = limpar_texto(request.form.get('comunidade', '')) or None
     anotacoes_json = request.form.get('anotacoes_json', '[]')
 
     if not nome:
@@ -1072,6 +1162,7 @@ def mandado_importar():
         nome=nome, vulgo=vulgo, foto=foto_url, foto_public_id=foto_public_id,
         genitora=genitora, faccao=faccao, bairro=bairro, municipio=municipio,
         anotacoes='', octopus=octopus, octopusasint=octopusasint,
+        comunidade=comunidade,
         usuario_id=usuario.id,
         fonetico_nome=calcular_fonetico(nome),
         fonetico_vulgo=calcular_fonetico(vulgo),
@@ -1411,6 +1502,27 @@ def busca_reversa():
                            termos_frequentes=termos_frequentes,
                            sugestoes_vinculo=sugestoes_vinculo)
 # ✅ Rota para dados do alvo (usada no modal)
+@app.route('/comunidade/localizar', methods=['POST'])
+def comunidade_localizar():
+    if 'usuario_logado' not in session:
+        return jsonify(ok=False, erro='Sessão expirada.'), 401
+    dados_json = request.get_json(silent=True) or {}
+    try:
+        lat = float(request.form.get('lat') or dados_json.get('lat'))
+        lon = float(request.form.get('lon') or dados_json.get('lon'))
+    except (TypeError, ValueError):
+        return jsonify(ok=False, erro='Coordenadas inválidas.'), 400
+
+    comunidade = encontrar_comunidade(lat, lon)
+    return jsonify(ok=True, comunidade=comunidade)
+
+@app.route('/comunidade/lista')
+def comunidade_lista():
+    if 'usuario_logado' not in session:
+        return jsonify([]), 401
+    nomes = sorted(set(c['nome_normalizado'] for c in COMUNIDADES_AIS18))
+    return jsonify([{'valor': nome, 'id': None} for nome in nomes])
+
 @app.route('/dados_alvo/<int:id>')
 def dados_alvo(id):
     pessoa = Pessoa.query.get_or_404(id)
@@ -1433,6 +1545,7 @@ def dados_alvo(id):
         "faccao": pessoa.faccao,
         "bairro": pessoa.bairro or '',
         "endereco": endereco,
+        "comunidade": pessoa.comunidade or '',
         "anotacoes": pessoa.anotacoes or ''
     })
 
@@ -1486,6 +1599,7 @@ def cadastro_alvo():
         anotacoes_json = request.form.get('anotacoes_json', '[]')
         octopus = limpar_texto(request.form['octopus'])
         octopusasint = limpar_texto(request.form['octopusasint'])  # ✅ Novo campo
+        comunidade = limpar_texto(request.form.get('comunidade', '')) or None
         foto = request.files['foto']
         foto_url = ''
         foto_public_id = None
@@ -1513,6 +1627,7 @@ def cadastro_alvo():
     bairro=bairro, municipio=municipio,
     anotacoes='', octopus=octopus,
     octopusasint=octopusasint,  # ✅ Aqui
+    comunidade=comunidade,
     usuario_id=usuario.id, # 👈 vincula ao usuário
     fonetico_nome=calcular_fonetico(nome),
     fonetico_vulgo=calcular_fonetico(vulgo),
@@ -1559,7 +1674,7 @@ def cadastro_alvo():
 # pesquisar alvo
 RESULTADOS_POR_PAGINA = 20
 
-def _buscar_alvos_query(termo, bairro, municipio, nome_parecido=False, fonetica=False):
+def _buscar_alvos_query(termo, bairro, municipio, nome_parecido=False, fonetica=False, comunidade=''):
     condicao_nome = (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
 
     # "Nome parecido" -- só entra se o usuário marcar a caixa: junta
@@ -1581,11 +1696,13 @@ def _buscar_alvos_query(termo, bairro, municipio, nome_parecido=False, fonetica=
         query = query.filter(Pessoa.municipio.ilike(municipio))
     if bairro:
         query = query.filter(Pessoa.bairro.ilike(bairro))
+    if comunidade:
+        query = query.filter(Pessoa.comunidade.ilike(comunidade))
     return query.order_by(Pessoa.nome)
 
 
-def _buscar_alvos_paginado(termo, bairro, municipio, pagina, nome_parecido=False, fonetica=False):
-    query = _buscar_alvos_query(termo, bairro, municipio, nome_parecido, fonetica)
+def _buscar_alvos_paginado(termo, bairro, municipio, pagina, nome_parecido=False, fonetica=False, comunidade=''):
+    query = _buscar_alvos_query(termo, bairro, municipio, nome_parecido, fonetica, comunidade)
     pagina = max(1, pagina)
     paginacao = query.paginate(page=pagina, per_page=RESULTADOS_POR_PAGINA, error_out=False)
     if paginacao.pages and pagina > paginacao.pages:
@@ -1602,6 +1719,7 @@ def pesquisar_alvo():
     termo = ''
     bairro = ''
     municipio = ''
+    comunidade = ''
     resultados = []
     alvo = None
     mensagem = ''
@@ -1614,26 +1732,28 @@ def pesquisar_alvo():
         termo = limpar_texto(request.form['termo'])
         bairro = limpar_texto(request.form.get('bairro', ''))
         municipio = limpar_texto(request.form.get('municipio', ''))
+        comunidade = limpar_texto(request.form.get('comunidade', ''))
         nome_parecido = request.form.get('nome_parecido') == '1'
         fonetica = request.form.get('fonetica') == '1'
 
-        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, 1, nome_parecido, fonetica)
+        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, 1, nome_parecido, fonetica, comunidade)
 
         if not resultados:
-            mensagem = "Não há resultados para este nome."
+            mensagem = "Não há resultados para essa busca."
 
     # Ao clicar num resultado ou trocar de página (GET com termo), refaz a
     # mesma busca a partir dos termos que vieram junto na URL, para a lista
     # continuar disponível ao lado do alvo selecionado (e o botão
     # "Voltar aos resultados" e a paginação funcionarem).
-    elif request.args.get('termo'):
+    elif 'termo' in request.args:
         termo = limpar_texto(request.args.get('termo', ''))
         bairro = limpar_texto(request.args.get('bairro', ''))
         municipio = limpar_texto(request.args.get('municipio', ''))
+        comunidade = limpar_texto(request.args.get('comunidade', ''))
         nome_parecido = request.args.get('nome_parecido') == '1'
         fonetica = request.args.get('fonetica') == '1'
         pagina_solicitada = request.args.get('pagina', 1, type=int) or 1
-        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, pagina_solicitada, nome_parecido, fonetica)
+        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, pagina_solicitada, nome_parecido, fonetica, comunidade)
 
     if request.args.get('id'):
         alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
@@ -1648,6 +1768,7 @@ def pesquisar_alvo():
         termo=termo,
         bairro=bairro,
         municipio=municipio,
+        comunidade=comunidade,
         resultados=resultados,
         alvo=alvo,
         is_admin=is_admin,
@@ -1698,6 +1819,7 @@ def pesquisa_lotes():
         bairro = request.form.get('bairro', '').strip()
         faccao = request.form.get('facção', '').strip()
         crime = request.form.get('crime', '').strip()
+        comunidade = request.form.get('comunidade', '').strip()
 
         crime_normalizado = normalizar(crime)
 
@@ -1709,6 +1831,8 @@ def pesquisa_lotes():
             query = query.filter(Pessoa.bairro == bairro.upper())
         if faccao:
             query = query.filter(Pessoa.faccao == faccao.upper())
+        if comunidade:
+            query = query.filter(Pessoa.comunidade == comunidade.upper())
 
         todos = query.all()
 
@@ -1733,7 +1857,7 @@ def editar_alvo():
     # Guarda os valores antigos dos campos simples só pra saber, no
     # histórico, o que realmente mudou nessa edição (sem guardar o
     # conteúdo em si, só o nome dos campos).
-    campos_monitorados = ['nome', 'vulgo', 'genitora', 'faccao', 'bairro', 'municipio', 'octopus', 'octopusasint']
+    campos_monitorados = ['nome', 'vulgo', 'genitora', 'faccao', 'bairro', 'municipio', 'octopus', 'octopusasint', 'comunidade']
     valores_antigos = {campo: getattr(alvo, campo) for campo in campos_monitorados}
 
     # Atualiza os dados do formulário
@@ -1753,6 +1877,7 @@ def editar_alvo():
     # hoje no topo do texto toda vez, mesmo sem mexer nas anotações).
     alvo.octopus = limpar_texto(request.form['octopus'])
     alvo.octopusasint = limpar_texto(request.form['octopusasint'])  # ✅ Atualização
+    alvo.comunidade = limpar_texto(request.form.get('comunidade', '')) or None
     
     # Atualiza a foto se enviada -- antes de trocar, guarda a foto antiga no
     # histórico (pra não perder o público_id e poder excluí-la do Cloudinary

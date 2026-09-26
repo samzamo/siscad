@@ -596,7 +596,7 @@
       .alvo-info-flex { flex-direction: column; align-items: center; }
       .card-body { padding: 16px; }
       .dados-grid { grid-template-columns: 1fr; }
-      .btn-voltar-fixo { position: static; display: inline-block; margin-bottom: 14px; }
+      .fixo-topo-esquerda { position: static; margin-bottom: 14px; }
     }
 
     .modal-overlay {
@@ -738,12 +738,15 @@
         {% endwith %}
 
         <form method="POST" class="search-row{% if alvo %} resultados-oculto{% endif %}" id="form-pesquisa">
-          <input type="text" name="termo" placeholder="Nome ou vulgo" value="{{ termo }}" required>
+          <input type="text" name="termo" placeholder="Nome ou vulgo (opcional se filtrar por comunidade/bairro/município)" value="{{ termo }}">
           <select name="municipio" id="busca-municipio" data-atual="{{ municipio or '' }}">
             <option value="">Município (todos)</option>
           </select>
           <select name="bairro" id="busca-bairro" data-atual="{{ bairro or '' }}">
             <option value="">Bairro (todos)</option>
+          </select>
+          <select name="comunidade" id="busca-comunidade" data-atual="{{ comunidade or '' }}">
+            <option value="">Comunidade (todas)</option>
           </select>
           <button type="submit">Pesquisar</button>
         </form>
@@ -770,6 +773,7 @@
                   <input type="hidden" name="id" value="{{ r.id }}">
                   <input type="hidden" name="termo" value="{{ termo }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
                   <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
                   <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
@@ -790,6 +794,7 @@
                 <form method="GET">
                   <input type="hidden" name="termo" value="{{ termo }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
                   <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
                   <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
@@ -800,6 +805,7 @@
                 <form method="GET">
                   <input type="hidden" name="termo" value="{{ termo }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
+                  <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
                   <input type="hidden" name="fonetica" value="{{ '1' if fonetica else '' }}">
                   <input type="hidden" name="nome_parecido" value="{{ '1' if nome_parecido else '' }}">
@@ -826,9 +832,11 @@
                 {% if fotos_antigas_count and fotos_antigas_count > 0 %}
                   <button type="button" class="btn-top-action success" id="btn-fotos-antigas" onclick="abrirModalFotosAntigas({{ alvo.id }})">+ 📷 Fotos antigas</button>
                 {% endif %}
-                <button type="button" class="btn-exportar" onclick="copiarTextoAlvo()" title="Copiar texto formatado para colar no WhatsApp">📋 Copiar texto</button>
+                <button type="button" class="btn-exportar" onclick="copiarTextoAlvo()"
+                        title="Copiar texto formatado para colar no WhatsApp">📋 Copiar texto</button>
                 {% if alvo.foto %}
-                  <button type="button" class="btn-exportar" id="btn-copiar-imagem" onclick="copiarImagemAlvo()" title="Copiar a foto para colar em seguida">🖼️ Copiar imagem</button>
+                  <button type="button" class="btn-exportar" id="btn-copiar-imagem" onclick="copiarImagemAlvo()"
+                          title="Copiar a foto para colar em seguida">🖼️ Copiar imagem</button>
                 {% endif %}
               </div>
             </div>
@@ -845,6 +853,7 @@
                   <div class="data-row"><span class="label">Facção</span><span class="value">{{ alvo.faccao }}</span></div>
                   <div class="data-row"><span class="label">Município</span><span class="value">{{ alvo.municipio }}</span></div>
                   <div class="data-row"><span class="label">Bairro</span><span class="value">{{ alvo.bairro }}</span></div>
+                  <div class="data-row"><span class="label">Comunidade</span><span class="value">{{ alvo.comunidade or '—' }}</span></div>
                   <div class="endereco-container full">
                     <span class="label">Endereço</span>
                     <span class="value">{{ alvo.octopus }}</span>
@@ -965,6 +974,8 @@
           <div>
             <label for="edit-octopus">Endereço</label>
             <input type="text" id="edit-octopus" name="octopus" value="{{ alvo.octopus }}" placeholder="Endereço">
+            <div id="edit-comunidade-display" style="font-size:12px; color:#6b7280; margin-top:4px;"></div>
+            <input type="hidden" name="comunidade" id="edit-comunidade" value="{{ alvo.comunidade or '' }}">
           </div>
 
           <div>
@@ -1019,6 +1030,17 @@
   <script src="{{ url_for('static', filename='opcoes.js') }}"></script>
   <script src="{{ url_for('static', filename='anotacoes.js') }}"></script>
   <script src="{{ url_for('static', filename='ficha-imagem.js') }}"></script>
+  <script src="{{ url_for('static', filename='comunidade.js') }}"></script>
+  <script>
+    {% if alvo %}
+    configurarAutoComunidade({
+      enderecoInputId: 'edit-octopus',
+      comunidadeHiddenId: 'edit-comunidade',
+      displayId: 'edit-comunidade-display',
+      bairroInputId: 'bairro',
+    });
+    {% endif %}
+  </script>
   <script>
     {% if alvo %}
     // Dados do alvo selecionado, prontos pra montar o texto/imagem da ficha.
@@ -1031,6 +1053,7 @@
       municipio: {{ (alvo.municipio or '') | tojson }},
       bairro: {{ (alvo.bairro or '') | tojson }},
       endereco: {{ (alvo.octopus or '') | tojson }},
+      comunidade: {{ (alvo.comunidade or '') | tojson }},
       octopusasint: {{ (alvo.octopusasint or '') | tojson }},
       anotacoes: {{ (alvo.anotacoes or '') | tojson }},
       foto: {{ (alvo.foto or '') | tojson }},
@@ -1190,7 +1213,9 @@
       }
 
       DADOS_ALVO_SELECIONADO.foto = novaUrl;
-      fichaBlobPromiseSelecionado = FichaImagem.gerarBlobFoto(novaUrl).catch(function () { return null; });
+      fichaBlobPromiseSelecionado = novaUrl
+        ? FichaImagem.gerarBlobFoto(novaUrl).catch(function () { return null; })
+        : Promise.resolve(null);
 
       const btnCopiarImagem = document.getElementById('btn-copiar-imagem');
       if (!novaUrl && btnCopiarImagem) {
@@ -1214,21 +1239,48 @@
       return sucesso;
     }
 
-    async function copiarTextoAlvo() {
+    async function copiarTextoInterno() {
       const texto = FichaImagem.montarTexto(DADOS_ALVO_SELECIONADO);
-
       try {
         await navigator.clipboard.writeText(texto);
-        alert('Texto copiado! Agora é só colar no WhatsApp (ou onde quiser).');
-        return;
+        return true;
       } catch (e) {
         // segue pro método alternativo abaixo
       }
+      if (copiarTextoAntigo(texto)) return true;
+      prompt('Não deu pra copiar automaticamente. Copie manualmente:', texto);
+      return false;
+    }
 
-      if (copiarTextoAntigo(texto)) {
+    async function copiarImagemInterno() {
+      let blob = await fichaBlobPromiseSelecionado;
+      if (!blob) {
+        try { blob = await FichaImagem.gerarBlobFoto(DADOS_ALVO_SELECIONADO.foto); } catch (e) { blob = null; }
+      }
+      if (!blob) {
+        alert('Não foi possível carregar a foto agora.');
+        return;
+      }
+
+      // Só tenta copiar a imagem direto pra área de transferência -- sem
+      // abrir aba nova nem baixar arquivo como alternativa.
+      if (navigator.clipboard && window.ClipboardItem) {
+        try {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+          alert('Foto copiada! Agora é só colar (Ctrl+V ou tocar e segurar) logo depois do texto, no mesmo chat.');
+          return;
+        } catch (e) {
+          // segue pro aviso de erro abaixo
+        }
+      }
+
+      alert('Esse navegador não deixa copiar a imagem direto (geralmente por não estar em HTTPS ou por falta de suporte).');
+    }
+
+    async function copiarTextoAlvo() {
+      const ok = await copiarTextoInterno();
+      if (ok) {
         alert('Texto copiado! Agora é só colar no WhatsApp (ou onde quiser).');
-      } else {
-        prompt('Não deu pra copiar automaticamente. Copie manualmente:', texto);
       }
     }
 
@@ -1237,48 +1289,7 @@
         alert('Esse alvo não tem foto cadastrada.');
         return;
       }
-
-      const btn = document.getElementById('btn-copiar-imagem');
-      const textoOriginal = btn ? btn.textContent : null;
-      if (btn) { btn.disabled = true; btn.textContent = '⏳ Gerando...'; }
-
-      try {
-        let blob = await fichaBlobPromiseSelecionado;
-        if (!blob) {
-          try { blob = await FichaImagem.gerarBlobFoto(DADOS_ALVO_SELECIONADO.foto); } catch (e) { blob = null; }
-        }
-        if (!blob) {
-          alert('Não foi possível carregar a foto agora. Tente novamente.');
-          return;
-        }
-
-        // Tenta copiar a imagem direto pra área de transferência -- assim
-        // dá pra colar ela em seguida, depois de já ter colado o texto.
-        if (navigator.clipboard && window.ClipboardItem) {
-          try {
-            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-            alert('Foto copiada! Agora é só colar (Ctrl+V ou tocar e segurar) logo depois do texto, no mesmo chat.');
-            return;
-          } catch (e) {
-            // navegador não deixou copiar imagem direto (comum fora de
-            // HTTPS) -- mostra a foto numa aba pra copiar/printar na mão
-          }
-        }
-
-        // Fallback: abre a foto numa aba nova -- dá pra clicar com o botão
-        // direito e "Copiar imagem", ou tirar um print da tela.
-        const url = URL.createObjectURL(blob);
-        const aba = window.open(url, '_blank');
-        if (!aba) {
-          // pop-up bloqueado -- baixa o arquivo como último recurso
-          FichaImagem.baixarBlob(blob, FichaImagem.nomeArquivo(DADOS_ALVO_SELECIONADO.nome, 'foto'));
-          alert('Esse navegador não deixa copiar imagem direto nem abrir a aba (pop-up bloqueado). Baixei o arquivo -- é só anexar no WhatsApp.');
-        } else {
-          alert('Esse navegador não deixa copiar a imagem direto. Abri ela numa aba nova -- clique com o botão direito nela e escolha "Copiar imagem" (ou tire um print).');
-        }
-      } finally {
-        if (btn) { btn.disabled = false; btn.textContent = textoOriginal; }
-      }
+      await copiarImagemInterno();
     }
     {% endif %}
 
@@ -1297,6 +1308,14 @@
         municipioId: "busca-municipio",
         bairroId: "busca-bairro",
       });
+
+      const comunidadeSelect = document.getElementById("busca-comunidade");
+      if (comunidadeSelect) {
+        fetch("/comunidade/lista")
+          .then(r => r.json())
+          .then(nomes => preencherSelect(comunidadeSelect, nomes, comunidadeSelect.dataset.atual))
+          .catch(() => {});
+      }
     }
 
     // Barra de progresso ao pesquisar: puramente visual (não é medição real
@@ -1335,7 +1354,18 @@
       const form = document.getElementById("form-pesquisa");
       if (!form) return;
 
-      form.addEventListener("submit", function () {
+      form.addEventListener("submit", function (e) {
+        const termo = form.querySelector('input[name="termo"]').value.trim();
+        const municipio = document.getElementById("busca-municipio");
+        const bairro = document.getElementById("busca-bairro");
+        const comunidade = document.getElementById("busca-comunidade");
+        const temFiltro = (municipio && municipio.value) || (bairro && bairro.value) || (comunidade && comunidade.value);
+        if (!termo && !temFiltro) {
+          e.preventDefault();
+          alert("Digite um nome/vulgo ou selecione município, bairro ou comunidade.");
+          return;
+        }
+
         const overlay = document.getElementById("barra-progresso-overlay");
         const preenchimento = document.getElementById("barra-progresso-preenchimento");
         const texto = document.getElementById("barra-progresso-texto");

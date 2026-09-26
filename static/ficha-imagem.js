@@ -140,6 +140,7 @@ const FichaImagem = (function () {
       ['Município', dados.municipio],
       ['Bairro', dados.bairro],
       ['Endereço', dados.endereco],
+      ['Comunidade', dados.comunidade],
     ].filter(function (par) { return par[1]; });
 
     ctx.font = '14px ' + FONTE;
@@ -259,6 +260,7 @@ const FichaImagem = (function () {
     if (dados.municipio) linhas.push('🏙️ Município: ' + dados.municipio);
     if (dados.bairro) linhas.push('🏘️ Bairro: ' + dados.bairro);
     if (dados.endereco) linhas.push('📍 Endereço: ' + dados.endereco);
+    if (dados.comunidade) linhas.push('🏡 Comunidade: ' + dados.comunidade);
     if (dados.octopusasint) linhas.push('🐙 Sistema: ' + dados.octopusasint);
     linhas.push('');
     linhas.push('📝 Anotações:');

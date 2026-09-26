@@ -304,6 +304,7 @@
           <p><strong>Genitora:</strong> <span id="modal-genitora"></span></p>
           <p><strong>Facção:</strong> <span id="modal-faccao"></span></p>
           <p><strong>Bairro:</strong> <span id="modal-bairro"></span></p>
+          <p><strong>Comunidade:</strong> <span id="modal-comunidade"></span></p>
           <p><strong>Endereço:</strong> <span id="modal-endereco"></span></p>
         </div>
       </div>
@@ -326,6 +327,7 @@
               document.getElementById("modal-genitora").textContent = data.genitora;
               document.getElementById("modal-faccao").textContent = data.faccao;
               document.getElementById("modal-bairro").textContent = data.bairro;
+              document.getElementById("modal-comunidade").textContent = data.comunidade || '—';
               document.getElementById("modal-endereco").textContent = data.endereco;
               document.getElementById("modal-anotacoes").textContent = data.anotacoes;
               document.getElementById("modal-vinculo").style.display = "flex";
