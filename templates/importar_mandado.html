@@ -26,9 +26,20 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 12px rgba(0,0,0,0.05);
       overflow: hidden; border: 1px solid var(--border);
     }
-    .card-header { background-color: var(--navy); color: #fff; padding: 18px 24px; text-align: center; }
+    .card-header { background-color: var(--navy); color: #fff; padding: 18px 24px; text-align: center; position: relative; }
     .card-header .eyebrow { display:block; font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:#9db3c4; margin-bottom:4px; }
     .card-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+    .btn-bnmp-header {
+      position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 6px;
+      background-color: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.35);
+      color: #fff; font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap;
+    }
+    .btn-bnmp-header:hover { background-color: rgba(255,255,255,0.22); }
+    @media screen and (max-width: 520px) {
+      .btn-bnmp-header { position: static; transform: none; display: inline-flex; margin-top: 10px; }
+    }
     .card-body { padding: 28px 32px; }
 
     .dropzone {
@@ -168,6 +179,9 @@
       <div class="card-header">
         <span class="eyebrow">SISCAD</span>
         <h2>Importar Mandado (PDF)</h2>
+        <a href="https://portalbnmp.cnj.jus.br" target="_blank" rel="noopener" class="btn-bnmp-header">
+          🔗 Portal BNMP
+        </a>
       </div>
       <div class="card-body">
         {% if mensagem %}

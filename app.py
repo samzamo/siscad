@@ -1674,24 +1674,36 @@ def cadastro_alvo():
 # pesquisar alvo
 RESULTADOS_POR_PAGINA = 20
 
-def _buscar_alvos_query(termo, bairro, municipio, nome_parecido=False, fonetica=False, comunidade=''):
-    condicao_nome = (Pessoa.nome.ilike(f'%{termo}%')) | (Pessoa.vulgo.ilike(f'%{termo}%'))
+def _buscar_alvos_query(nome, vulgo, bairro, municipio, nome_parecido=False, fonetica=False, comunidade=''):
+    query = Pessoa.query
 
-    # "Nome parecido" -- só entra se o usuário marcar a caixa: junta
-    # variações de escrita da mesma palavra (Felipe/Phelipe/Filipe).
-    if nome_parecido:
-        condicao_parecido = _condicao_nome_parecido(termo, Pessoa.forma_nome, Pessoa.forma_vulgo)
-        if condicao_parecido is not None:
-            condicao_nome = condicao_nome | condicao_parecido
+    # Campo "Nome" -- busca só na coluna nome (+ variações, se marcadas).
+    if nome:
+        condicao_nome = Pessoa.nome.ilike(f'%{nome}%')
+        if nome_parecido:
+            condicao_parecido = _condicao_nome_parecido(nome, Pessoa.forma_nome)
+            if condicao_parecido is not None:
+                condicao_nome = condicao_nome | condicao_parecido
+        if fonetica:
+            condicao_fonetica = _condicao_fonetica(nome, Pessoa.fonetico_nome)
+            if condicao_fonetica is not None:
+                condicao_nome = condicao_nome | condicao_fonetica
+        query = query.filter(condicao_nome)
 
-    # Busca fonética -- também só entra se marcada (é mais abrangente ainda,
-    # então também pode trazer mais resultados fora do alvo).
-    if fonetica:
-        condicao_fonetica = _condicao_fonetica(termo, Pessoa.fonetico_nome, Pessoa.fonetico_vulgo)
-        if condicao_fonetica is not None:
-            condicao_nome = condicao_nome | condicao_fonetica
+    # Campo "Vulgo" -- busca só na coluna vulgo (+ variações, se marcadas).
+    # Independente do campo Nome: os dois juntos filtram em AND.
+    if vulgo:
+        condicao_vulgo = Pessoa.vulgo.ilike(f'%{vulgo}%')
+        if nome_parecido:
+            condicao_parecido_v = _condicao_nome_parecido(vulgo, Pessoa.forma_vulgo)
+            if condicao_parecido_v is not None:
+                condicao_vulgo = condicao_vulgo | condicao_parecido_v
+        if fonetica:
+            condicao_fonetica_v = _condicao_fonetica(vulgo, Pessoa.fonetico_vulgo)
+            if condicao_fonetica_v is not None:
+                condicao_vulgo = condicao_vulgo | condicao_fonetica_v
+        query = query.filter(condicao_vulgo)
 
-    query = Pessoa.query.filter(condicao_nome)
     if municipio:
         query = query.filter(Pessoa.municipio.ilike(municipio))
     if bairro:
@@ -1701,8 +1713,8 @@ def _buscar_alvos_query(termo, bairro, municipio, nome_parecido=False, fonetica=
     return query.order_by(Pessoa.nome)
 
 
-def _buscar_alvos_paginado(termo, bairro, municipio, pagina, nome_parecido=False, fonetica=False, comunidade=''):
-    query = _buscar_alvos_query(termo, bairro, municipio, nome_parecido, fonetica, comunidade)
+def _buscar_alvos_paginado(nome, vulgo, bairro, municipio, pagina, nome_parecido=False, fonetica=False, comunidade=''):
+    query = _buscar_alvos_query(nome, vulgo, bairro, municipio, nome_parecido, fonetica, comunidade)
     pagina = max(1, pagina)
     paginacao = query.paginate(page=pagina, per_page=RESULTADOS_POR_PAGINA, error_out=False)
     if paginacao.pages and pagina > paginacao.pages:
@@ -1717,6 +1729,7 @@ def pesquisar_alvo():
         return redirect(url_for('login'))
 
     termo = ''
+    vulgo_busca = ''
     bairro = ''
     municipio = ''
     comunidade = ''
@@ -1729,14 +1742,15 @@ def pesquisar_alvo():
     fonetica = False
 
     if request.method == 'POST':
-        termo = limpar_texto(request.form['termo'])
+        termo = limpar_texto(request.form.get('termo', ''))
+        vulgo_busca = limpar_texto(request.form.get('vulgo_busca', ''))
         bairro = limpar_texto(request.form.get('bairro', ''))
         municipio = limpar_texto(request.form.get('municipio', ''))
         comunidade = limpar_texto(request.form.get('comunidade', ''))
         nome_parecido = request.form.get('nome_parecido') == '1'
         fonetica = request.form.get('fonetica') == '1'
 
-        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, 1, nome_parecido, fonetica, comunidade)
+        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, vulgo_busca, bairro, municipio, 1, nome_parecido, fonetica, comunidade)
 
         if not resultados:
             mensagem = "Não há resultados para essa busca."
@@ -1745,15 +1759,16 @@ def pesquisar_alvo():
     # mesma busca a partir dos termos que vieram junto na URL, para a lista
     # continuar disponível ao lado do alvo selecionado (e o botão
     # "Voltar aos resultados" e a paginação funcionarem).
-    elif 'termo' in request.args:
+    elif 'termo' in request.args or 'vulgo_busca' in request.args:
         termo = limpar_texto(request.args.get('termo', ''))
+        vulgo_busca = limpar_texto(request.args.get('vulgo_busca', ''))
         bairro = limpar_texto(request.args.get('bairro', ''))
         municipio = limpar_texto(request.args.get('municipio', ''))
         comunidade = limpar_texto(request.args.get('comunidade', ''))
         nome_parecido = request.args.get('nome_parecido') == '1'
         fonetica = request.args.get('fonetica') == '1'
         pagina_solicitada = request.args.get('pagina', 1, type=int) or 1
-        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, bairro, municipio, pagina_solicitada, nome_parecido, fonetica, comunidade)
+        resultados, total_paginas, pagina = _buscar_alvos_paginado(termo, vulgo_busca, bairro, municipio, pagina_solicitada, nome_parecido, fonetica, comunidade)
 
     if request.args.get('id'):
         alvo = Pessoa.query.filter_by(id=request.args.get('id')).first()
@@ -1766,6 +1781,7 @@ def pesquisar_alvo():
     return render_template(
         'pesquisar_alvo.html',
         termo=termo,
+        vulgo_busca=vulgo_busca,
         bairro=bairro,
         municipio=municipio,
         comunidade=comunidade,

@@ -738,7 +738,8 @@
         {% endwith %}
 
         <form method="POST" class="search-row{% if alvo %} resultados-oculto{% endif %}" id="form-pesquisa">
-          <input type="text" name="termo" placeholder="Nome ou vulgo (opcional se filtrar por comunidade/bairro/município)" value="{{ termo }}">
+          <input type="text" name="termo" placeholder="Nome" value="{{ termo }}">
+          <input type="text" name="vulgo_busca" placeholder="Vulgo" value="{{ vulgo_busca }}">
           <select name="municipio" id="busca-municipio" data-atual="{{ municipio or '' }}">
             <option value="">Município (todos)</option>
           </select>
@@ -772,6 +773,7 @@
                 <form method="GET" class="resultado-form" data-resultado-form data-id="{{ r.id }}">
                   <input type="hidden" name="id" value="{{ r.id }}">
                   <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="vulgo_busca" value="{{ vulgo_busca }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
                   <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
@@ -793,6 +795,7 @@
               <div class="paginacao">
                 <form method="GET">
                   <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="vulgo_busca" value="{{ vulgo_busca }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
                   <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
@@ -804,6 +807,7 @@
                 <span>Página {{ pagina }} de {{ total_paginas }}</span>
                 <form method="GET">
                   <input type="hidden" name="termo" value="{{ termo }}">
+                  <input type="hidden" name="vulgo_busca" value="{{ vulgo_busca }}">
                   <input type="hidden" name="bairro" value="{{ bairro }}">
                   <input type="hidden" name="comunidade" value="{{ comunidade }}">
                   <input type="hidden" name="municipio" value="{{ municipio }}">
@@ -1356,13 +1360,14 @@
 
       form.addEventListener("submit", function (e) {
         const termo = form.querySelector('input[name="termo"]').value.trim();
+        const vulgoBusca = form.querySelector('input[name="vulgo_busca"]').value.trim();
         const municipio = document.getElementById("busca-municipio");
         const bairro = document.getElementById("busca-bairro");
         const comunidade = document.getElementById("busca-comunidade");
         const temFiltro = (municipio && municipio.value) || (bairro && bairro.value) || (comunidade && comunidade.value);
-        if (!termo && !temFiltro) {
+        if (!termo && !vulgoBusca && !temFiltro) {
           e.preventDefault();
-          alert("Digite um nome/vulgo ou selecione município, bairro ou comunidade.");
+          alert("Digite um nome, um vulgo, ou selecione município, bairro ou comunidade.");
           return;
         }
 
