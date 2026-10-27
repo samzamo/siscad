@@ -592,6 +592,34 @@
       line-height: 1.5;
     }
 
+    /* Anotações estruturadas ([DATA] TIPO: contexto), destacadas em balão
+       azul claro para se diferenciarem do texto antigo/livre ao redor. */
+    .anotacoes-box .anotacao-destacada {
+      display: block;
+      white-space: pre-wrap;
+      background-color: #e8f2fc;
+      border: 1px solid #bcdcf7;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .anotacoes-box .anotacao-destacada:last-child { margin-bottom: 0; }
+    .anotacoes-box .anotacao-destacada .anotacao-cabecalho {
+      display: block;
+      font-weight: 700;
+      color: var(--navy);
+      margin-bottom: 2px;
+    }
+    .anotacoes-box .anotacao-livre {
+      display: block;
+      white-space: pre-wrap;
+      padding: 2px 2px 10px;
+      color: var(--text);
+    }
+
     @media screen and (max-width: 600px) {
       .alvo-info-flex { flex-direction: column; align-items: center; }
       .card-body { padding: 16px; }
@@ -1379,10 +1407,10 @@
         // As caixinhas ficam no cabeçalho (fora do <form>), ligadas a ele
         // pelo atributo form="form-pesquisa" -- por isso a busca é no
         // documento inteiro, não só dentro do form.
-        const checkParecido = document.querySelector('input[name="nome_parecido"]');
-        const checkFonetica = document.querySelector('input[name="fonetica"]');
+        const checkParecido = document.getElementById("check-nome-parecido");
+        const checkFonetica = document.getElementById("check-fonetica");
 
-        const etapas = ["Buscando por nome..."];
+        const etapas = ["Buscando..."];
         if (checkParecido && checkParecido.checked) etapas.push("Verificando nomes parecidos...");
         if (checkFonetica && checkFonetica.checked) etapas.push("Aplicando busca fonética...");
         etapas.push("Organizando resultados...");
@@ -1453,12 +1481,105 @@
       }
     });
 
+    // Realça as anotações estruturadas ([DD/MM/AAAA] TIPO: contexto),
+    // geradas automaticamente a partir da tela de anotações, deixando-as
+    // em balão azul claro dentro do quadro de texto. Qualquer trecho que
+    // não siga esse formato (anotações antigas, texto livre) é mantido
+    // exatamente como está, sem nenhum destaque.
+    function destacarAnotacoesEstruturadas() {
+      const caixa = document.querySelector(".anotacoes-box");
+      if (!caixa) return;
+
+      const textoOriginal = caixa.textContent;
+      if (!textoOriginal || !textoOriginal.trim()) return;
+
+      // Cada anotação estruturada começa com "[DD/MM/AAAA] TIPO:" no
+      // início de uma linha. Captura o cabeçalho (data + tipo) separado
+      // do restante do conteúdo até a próxima anotação estruturada ou o
+      // fim do texto.
+      const regexCabecalho = /^\[(\d{2}\/\d{2}\/\d{4})\]\s*([^:\n]+):/gm;
+
+      const blocos = [];
+      let ultimoFim = 0;
+      let match;
+      let ultimoCabecalho = null;
+
+      while ((match = regexCabecalho.exec(textoOriginal)) !== null) {
+        if (match.index > ultimoFim) {
+          blocos.push({ tipo: "livre", texto: textoOriginal.slice(ultimoFim, match.index) });
+        } else if (ultimoCabecalho) {
+          // Fecha o bloco estruturado anterior antes de abrir este.
+        }
+        ultimoCabecalho = { data: match[1], tipo: match[2].trim(), inicio: match.index, fimCabecalho: regexCabecalho.lastIndex };
+        blocos.push(ultimoCabecalho);
+        ultimoFim = regexCabecalho.lastIndex;
+      }
+
+      if (!blocos.some(function (b) { return b.data; })) return; // nada estruturado encontrado
+
+      if (ultimoFim < textoOriginal.length) {
+        blocos.push({ tipo: "livre", texto: textoOriginal.slice(ultimoFim) });
+      }
+
+      // Converte a lista de pedaços (cabeçalhos + texto livre) numa lista
+      // final de blocos prontos para virar HTML: cada cabeçalho "puxa"
+      // o texto livre que vem logo depois dele para dentro do mesmo balão.
+      const finalBlocos = [];
+      for (let i = 0; i < blocos.length; i++) {
+        const b = blocos[i];
+        if (b.data) {
+          const proximo = blocos[i + 1];
+          let contexto = "";
+          if (proximo && !proximo.data) {
+            // Cada anotação estruturada ocupa um único parágrafo (as
+            // entradas são geradas separadas por linha em branco). Então
+            // o contexto do balão vai só até a primeira linha em branco;
+            // o que vier depois disso é texto solto (legado) e fica de
+            // fora do balão, mesmo que não exista outro cabeçalho depois.
+            const quebra = proximo.texto.search(/\n\s*\n/);
+            if (quebra === -1) {
+              contexto = proximo.texto;
+              i++;
+            } else {
+              contexto = proximo.texto.slice(0, quebra);
+              const resto = proximo.texto.slice(quebra);
+              if (resto.trim()) {
+                blocos[i + 1] = { tipo: "livre", texto: resto };
+              } else {
+                i++;
+              }
+            }
+          }
+          finalBlocos.push({ estruturada: true, data: b.data, tipoAnot: b.tipo, contexto: contexto.replace(/^\n+/, "").replace(/\n+$/, "") });
+        } else if (b.texto && b.texto.trim()) {
+          finalBlocos.push({ estruturada: false, texto: b.texto.replace(/^\n+/, "").replace(/\n+$/, "") });
+        }
+      }
+
+      function escapeHtml(s) {
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+
+      const html = finalBlocos.map(function (b) {
+        if (b.estruturada) {
+          return '<span class="anotacao-destacada">'
+            + '<span class="anotacao-cabecalho">[' + escapeHtml(b.data) + '] ' + escapeHtml(b.tipoAnot) + ':</span>'
+            + escapeHtml(b.contexto)
+            + '</span>';
+        }
+        return '<span class="anotacao-livre">' + escapeHtml(b.texto) + '</span>';
+      }).join("");
+
+      caixa.innerHTML = html;
+    }
+
     document.addEventListener("DOMContentLoaded", function () {
       iniciarCombosDoModal();
       iniciarCombosDaBusca();
       marcarVistosNaLista();
       iniciarBarraProgressoPesquisa();
       iniciarModalOpcoesBusca();
+      destacarAnotacoesEstruturadas();
       {% if alvo %}
       configurarAnotacoes({
         modo: "servidor",

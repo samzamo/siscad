@@ -1,6 +1,40 @@
 {% if usuario_logado %}
 <div class="topbar">
   <a href="/menu" class="brand"><span class="dot"></span>SISCAD</a>
+  <!-- siscad-avisos: historico={{ aviso_historico_ativo }} novos={{ novos_cadastros_aviso }} meus={{ meus_cadastros_aviso }} -->
+  {% if aviso_historico_ativo %}
+  <a href="/historico" class="aviso-novos{% if not novos_cadastros_aviso %} aviso-zerado{% endif %}" title="Cadastros inseridos por todos os usuários desde o seu último acesso">
+    <span class="aviso-ponto"></span>{% if novos_cadastros_aviso %}+{{ novos_cadastros_aviso }} <span class="aviso-texto">{{ 'cadastro novo' if novos_cadastros_aviso == 1 else 'cadastros novos' }}</span>{% else %}0 <span class="aviso-texto">cadastros novos</span>{% endif %}
+  </a>
+  <style>
+    .aviso-novos {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-left: 12px; padding: 4px 10px;
+      border-radius: 999px; background: rgba(46,204,113,0.16);
+      border: 1px solid #2ecc71; color: #2ecc71;
+      font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap;
+      animation: aviso-piscar 1.2s ease-in-out infinite;
+    }
+    .aviso-novos.aviso-zerado { animation: none; opacity: .75; background: transparent; }
+    .aviso-ponto { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; }
+    @keyframes aviso-piscar { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+    @media (max-width: 520px) { .aviso-texto { display: none; } .aviso-novos { margin-left: 8px; padding: 4px 8px; } }
+  </style>
+  {% endif %}
+  {% if meus_cadastros_aviso is defined and meus_cadastros_aviso is not none %}
+  <span class="aviso-meus" title="Quantos cadastros você já fez no sistema">
+    📋 {{ meus_cadastros_aviso }} <span class="aviso-texto">{{ 'cadastro seu' if meus_cadastros_aviso == 1 else 'cadastros seus' }}</span>
+  </span>
+  <style>
+    .aviso-meus {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-left: 12px; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.25);
+      color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap;
+    }
+    @media (max-width: 520px) { .aviso-meus { margin-left: 8px; padding: 4px 8px; } }
+  </style>
+  {% endif %}
   <div class="user-area">
     <button type="button" class="user-name" id="btnMinhaConta" title="Configurações da conta">{{ usuario_logado }}</button>
     <a href="/logout" class="btn-sair">Sair</a>

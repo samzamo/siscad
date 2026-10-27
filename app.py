@@ -56,9 +56,10 @@ def limpar_texto(texto):
     return texto
 
 # ─────────────────────────────────────────────────────────────────────────
-# Comunidades (AIS 18) -- carrega o KML uma única vez na memória e localiza
-# a comunidade de um ponto (lat/lon) por geometria pura em Python, sem
-# nenhuma biblioteca extra (nem shapely) e sem nenhum serviço pago.
+# Comunidades (AIS 18): lê o KML uma vez e acha a comunidade de um ponto
+# (lat/lon) por geometria em Python puro -- sem biblioteca extra nem custo.
+# Se o arquivo dados/Comunidades.kml não existir, o site continua normal,
+# só que sem detectar comunidade.
 # ─────────────────────────────────────────────────────────────────────────
 _KML_NS = {'k': 'http://www.opengis.net/kml/2.2'}
 
@@ -69,7 +70,6 @@ def _carregar_comunidades_kml(caminho):
     except Exception as e:
         print(f'⚠️ Não consegui ler o KML de comunidades: {e}')
         return comunidades
-
     for pm in tree.getroot().findall('.//k:Placemark', _KML_NS):
         nome_el = pm.find('k:name', _KML_NS)
         nome = (nome_el.text or '').strip() if nome_el is not None else ''
@@ -114,7 +114,7 @@ def encontrar_comunidade(lat, lon):
                 return c['nome_normalizado']
     return None
 
-COMUNIDADES_AIS18 = _carregar_comunidades_kml(os.path.join(os.path.dirname(__file__), 'dados', 'Comunidades.kml'))
+COMUNIDADES_AIS18 = _carregar_comunidades_kml(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'dados', 'Comunidades.kml'))
 print(f'🗺️  {len(COMUNIDADES_AIS18)} comunidades (AIS 18) carregadas do KML.')
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -553,11 +553,37 @@ def injetar_usuario_logado():
     # template que inclua _nav.html, sem precisar passar isso manualmente
     # em cada render_template(). Não altera nenhuma rota existente.
     tipo = session.get('tipo', 'normal')
+    pode_historico = pode_ver_historico() if 'usuario_logado' in session else False
+
+    # Aviso verde piscando: cadastros novos desde o último acesso (só p/ quem vê o histórico)
+    novos_cadastros = 0
+    if pode_historico:
+        try:
+            if session.get('desde_login'):
+                desde = datetime.fromisoformat(session['desde_login'])
+            else:
+                desde = datetime.utcnow() - timedelta(hours=24)
+            novos_cadastros = Pessoa.query.filter(Pessoa.data_criacao > desde).count()
+        except Exception:
+            novos_cadastros = 0
+
+    # Todo usuário logado enxerga quantos cadastros já fez no sistema
+    meus_cadastros = None
+    if 'usuario_logado' in session:
+        try:
+            u = Usuario.query.filter_by(username=session['usuario_logado']).first()
+            meus_cadastros = Pessoa.query.filter_by(usuario_id=u.id).count() if u else 0
+        except Exception:
+            meus_cadastros = None
+
     return dict(
         usuario_logado=session.get('usuario_logado'),
         is_admin=session.get('is_admin', False),
         is_moderador=(tipo == 'moderador'),
-        pode_ver_historico_menu=pode_ver_historico() if 'usuario_logado' in session else False,
+        pode_ver_historico_menu=pode_historico,
+        aviso_historico_ativo=pode_historico,
+        novos_cadastros_aviso=novos_cadastros,
+        meus_cadastros_aviso=meus_cadastros,
     )
 
 
@@ -630,7 +656,7 @@ class Pessoa(db.Model):
     fonetico_vulgo = db.Column(db.String(255))  # idem, para o vulgo
     forma_nome = db.Column(db.String(255))      # forma p/ "nome parecido" (busca padrão, mais rigorosa)
     forma_vulgo = db.Column(db.String(255))     # idem, para o vulgo
-    comunidade = db.Column(db.String(150), nullable=True)  # comunidade (AIS 18), detectada automaticamente pelo endereço
+    comunidade = db.Column(db.String(150), nullable=True)  # comunidade (AIS 18), detectada pelo endereço
 
 class FotoHistorico(db.Model):
     """Fotos antigas de um alvo (substituídas ao atualizar o cadastro).
@@ -659,31 +685,6 @@ class Mandado(db.Model):
     data = db.Column(db.String)
     endereco = db.Column(db.String)
     status = db.Column(db.String(20), default='neutro')
-
-
-def resumir_endereco_mandado(endereco):
-    """Versão curta do endereço (só rua + bairro) pra listagem em
-    /mandados -- o endereço completo continua salvo/usado no ícone do
-    Google Maps. Mesma lógica de separação usada na extração do PDF
-    (o bairro é o trecho logo antes do "CEP", não fixo na 2ª posição,
-    por causa de complementos tipo "Nºs 751 OU 770" no meio)."""
-    if not endereco:
-        return ''
-    partes = [p.strip() for p in endereco.split(',') if p.strip()]
-    if not partes:
-        return endereco
-    rua = partes[0]
-    idx_cep = next((i for i, p in enumerate(partes) if re.match(r'(?i)^cep\b', p)), None)
-    if idx_cep is not None and idx_cep >= 2:
-        bairro = partes[idx_cep - 1]
-    elif len(partes) > 1:
-        bairro = partes[1]
-    else:
-        bairro = ''
-    return ' - '.join(p for p in [rua, bairro] if p)
-
-
-app.jinja_env.globals['resumir_endereco'] = resumir_endereco_mandado
 
 # ─────────────────────────────────────────────────────────────────────────
 # Importação de PDF de Mandado (BNMP / Tribunal de Justiça)
@@ -767,7 +768,7 @@ def extrair_dados_mandado(texto):
 
         cep_m = re.search(r'CEP\s*([\d.\-]+)', endereco_bruto, re.IGNORECASE)
         d['cep'] = cep_m.group(1) if cep_m else ''
-        muni_uf_m = re.search(r',\s*([A-Za-zÀ-ú\s]+?)\s*[-/]\s*([A-Z]{2})\s*[.,]?\s*$', endereco_bruto)
+        muni_uf_m = re.search(r',\s*([A-Za-zÀ-ú\s]+)\s*-\s*([A-Z]{2})\s*$', endereco_bruto)
         d['municipio'] = muni_uf_m.group(1).strip() if muni_uf_m else ''
         d['uf'] = muni_uf_m.group(2).strip() if muni_uf_m else ''
 
@@ -875,6 +876,27 @@ def sincronizar_anotacoes_legado(pessoa):
     pessoa.anotacoes = '\n\n'.join(linhas)
 
 
+def migrar_historico_antigo(pessoa):
+    """Se o alvo tem histórico em texto solto (Pessoa.anotacoes) e AINDA não
+    tem nenhuma anotação estruturada, transforma esse texto numa anotação
+    (balão) -- assim ele aparece no modal e não é apagado quando a
+    sincronização reescreve Pessoa.anotacoes a partir da lista estruturada.
+    Não commita sozinho; devolve True se criou a anotação."""
+    texto_antigo = (pessoa.anotacoes or '').strip()
+    if not texto_antigo:
+        return False
+    if Anotacao.query.filter_by(pessoa_id=pessoa.id).first():
+        return False
+    db.session.add(Anotacao(
+        pessoa_id=pessoa.id,
+        data=None,
+        tipo='HISTORICO ANTIGO',
+        contexto=texto_antigo,
+    ))
+    db.session.flush()
+    return True
+
+
 def _anotacao_para_json(a):
     return {
         'id': a.id,
@@ -889,6 +911,9 @@ def listar_anotacoes(pessoa_id):
     if 'usuario_logado' not in session:
         return jsonify([]), 401
     try:
+        pessoa = Pessoa.query.get(pessoa_id)
+        if pessoa and migrar_historico_antigo(pessoa):
+            db.session.commit()
         itens = Anotacao.query.filter_by(pessoa_id=pessoa_id).all()
     except Exception as e:
         db.session.rollback()
@@ -924,6 +949,9 @@ def criar_anotacao(pessoa_id):
             return jsonify({'erro': 'Data inválida.'}), 400
 
     try:
+        # Antes de criar a nova, preserva o histórico antigo (texto solto)
+        # como anotação -- senão a sincronização abaixo o apagaria.
+        migrar_historico_antigo(pessoa)
         nova = Anotacao(pessoa_id=pessoa.id, data=data_valor, tipo=tipo, contexto=contexto)
         db.session.add(nova)
         db.session.flush()
@@ -1011,6 +1039,17 @@ def login():
                 session['usuario_logado'] = username
                 session['is_admin'] = (user.tipo.lower() == 'admin')
                 session['tipo'] = user.tipo.lower()  # 👈 ESSENCIAL: salva o tipo ('normal', 'moderador', 'admin')
+                # Guarda o momento do acesso anterior (antes de gravar este login) --
+                # serve de marco pro aviso de "novos cadastros" de quem vê o histórico.
+                try:
+                    anterior = (AtividadeLog.query
+                                .filter_by(usuario_id=user.id, tipo='login')
+                                .order_by(AtividadeLog.criado_em.desc())
+                                .first())
+                    session['desde_login'] = (anterior.criado_em if anterior and anterior.criado_em
+                                              else datetime.utcnow() - timedelta(hours=24)).isoformat()
+                except Exception:
+                    session['desde_login'] = (datetime.utcnow() - timedelta(hours=24)).isoformat()
                 registrar_log('login', usuario=user)
                 return redirect(url_for('menu_principal'))
             else:
@@ -1512,9 +1551,7 @@ def comunidade_localizar():
         lon = float(request.form.get('lon') or dados_json.get('lon'))
     except (TypeError, ValueError):
         return jsonify(ok=False, erro='Coordenadas inválidas.'), 400
-
-    comunidade = encontrar_comunidade(lat, lon)
-    return jsonify(ok=True, comunidade=comunidade)
+    return jsonify(ok=True, comunidade=encontrar_comunidade(lat, lon))
 
 @app.route('/comunidade/lista')
 def comunidade_lista():
@@ -1544,8 +1581,8 @@ def dados_alvo(id):
         "genitora": pessoa.genitora,
         "faccao": pessoa.faccao,
         "bairro": pessoa.bairro or '',
-        "endereco": endereco,
         "comunidade": pessoa.comunidade or '',
+        "endereco": endereco,
         "anotacoes": pessoa.anotacoes or ''
     })
 
@@ -1677,31 +1714,32 @@ RESULTADOS_POR_PAGINA = 20
 def _buscar_alvos_query(nome, vulgo, bairro, municipio, nome_parecido=False, fonetica=False, comunidade=''):
     query = Pessoa.query
 
-    # Campo "Nome" -- busca só na coluna nome (+ variações, se marcadas).
+    # Campo "Nome" -- busca só na coluna nome. "Nome parecido" e "Busca
+    # fonética" (se marcadas) só ampliam a busca em cima do próprio nome.
     if nome:
         condicao_nome = Pessoa.nome.ilike(f'%{nome}%')
         if nome_parecido:
-            condicao_parecido = _condicao_nome_parecido(nome, Pessoa.forma_nome)
-            if condicao_parecido is not None:
-                condicao_nome = condicao_nome | condicao_parecido
+            extra = _condicao_nome_parecido(nome, Pessoa.forma_nome)
+            if extra is not None:
+                condicao_nome = condicao_nome | extra
         if fonetica:
-            condicao_fonetica = _condicao_fonetica(nome, Pessoa.fonetico_nome)
-            if condicao_fonetica is not None:
-                condicao_nome = condicao_nome | condicao_fonetica
+            extra = _condicao_fonetica(nome, Pessoa.fonetico_nome)
+            if extra is not None:
+                condicao_nome = condicao_nome | extra
         query = query.filter(condicao_nome)
 
-    # Campo "Vulgo" -- busca só na coluna vulgo (+ variações, se marcadas).
-    # Independente do campo Nome: os dois juntos filtram em AND.
+    # Campo "Vulgo" -- mesma lógica do Nome, só que na coluna vulgo.
+    # Se os dois campos forem preenchidos, os dois precisam bater (E).
     if vulgo:
         condicao_vulgo = Pessoa.vulgo.ilike(f'%{vulgo}%')
         if nome_parecido:
-            condicao_parecido_v = _condicao_nome_parecido(vulgo, Pessoa.forma_vulgo)
-            if condicao_parecido_v is not None:
-                condicao_vulgo = condicao_vulgo | condicao_parecido_v
+            extra = _condicao_nome_parecido(vulgo, Pessoa.forma_vulgo)
+            if extra is not None:
+                condicao_vulgo = condicao_vulgo | extra
         if fonetica:
-            condicao_fonetica_v = _condicao_fonetica(vulgo, Pessoa.fonetico_vulgo)
-            if condicao_fonetica_v is not None:
-                condicao_vulgo = condicao_vulgo | condicao_fonetica_v
+            extra = _condicao_fonetica(vulgo, Pessoa.fonetico_vulgo)
+            if extra is not None:
+                condicao_vulgo = condicao_vulgo | extra
         query = query.filter(condicao_vulgo)
 
     if municipio:
